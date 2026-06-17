@@ -346,14 +346,28 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const dbRef = ref(db, 'groups');
 
+// ----- collapsed state เป็นแบบ local-only ไม่ sync ขึ้น Firebase -----
+const COLLAPSE_KEY='pmt_collapsed_v1';
+function getLocalCollapsed(){
+  try{return JSON.parse(localStorage.getItem(COLLAPSE_KEY))||{};}catch(e){return {};}
+}
+function setLocalCollapsed(gid,val){
+  const map=getLocalCollapsed();
+  map[gid]=val;
+  try{localStorage.setItem(COLLAPSE_KEY,JSON.stringify(map));}catch(e){}
+}
+
 // sync จาก Firebase → local
 onValue(dbRef, (snapshot) => {
   const data = snapshot.val();
   if(data){
     // Firebase อาจส่งมาเป็น object {0:..., 1:...} หรือ array ก็ได้
     const arr = Array.isArray(data) ? data : Object.values(data);
+    const localCollapsed = getLocalCollapsed();
     groups = arr.map(g => ({
       ...g,
+      // collapsed ใช้ค่าจากเครื่องนี้เอง ไม่รับจาก Firebase เพื่อไม่ให้เปิด/ปิดกลุ่มพร้อมกันข้ามเครื่อง
+      collapsed: localCollapsed.hasOwnProperty(g.id) ? localCollapsed[g.id] : !!g.collapsed,
       customers: g.customers
         ? (Array.isArray(g.customers) ? g.customers : Object.values(g.customers)).map(c => ({
             ...c,
@@ -368,9 +382,13 @@ onValue(dbRef, (snapshot) => {
     document.getElementById('updated').textContent='ซิงค์ล่าสุด '+new Date().toLocaleString('th-TH');
   }});
 
-// override save ให้บันทึกขึ้น Firebase
+// override save ให้บันทึกขึ้น Firebase (ไม่ส่ง collapsed เพราะเป็น UI state เฉพาะเครื่อง)
 window._fbSave = function(g){
-  set(dbRef, g);
+  const forSync = g.map(grp => {
+    const {collapsed, ...rest} = grp;
+    return rest;
+  });
+  set(dbRef, forSync);
   document.getElementById('updated').textContent='บันทึกแล้ว '+new Date().toLocaleString('th-TH');
 };
 </script>
@@ -890,7 +908,9 @@ function customerCardHtml(g,c){
 // ----- group actions -----
 function toggleGroup(gid){
   const g=groups.find(x=>x.id===gid);if(!g)return;
-  g.collapsed=!g.collapsed;save();render();
+  g.collapsed=!g.collapsed;
+  setLocalCollapsed(gid,g.collapsed);
+  save();render();
 }
 function editGroupName(gid){
   const g=groups.find(x=>x.id===gid);if(!g)return;
@@ -920,7 +940,7 @@ function addCustomerToGroup(gid){
   const cid=nextCId(g);
   const c=mkCustomer(cid);g.customers.push(c);
   const ck=gid+'-'+cid;expandedCustomers.add(ck);
-  g.collapsed=false;save();render();
+  g.collapsed=false;setLocalCollapsed(gid,false);save();render();
   setTimeout(()=>{
     const card=document.getElementById('cc-'+ck);
     if(card){card.scrollIntoView({behavior:'smooth',block:'center'});
