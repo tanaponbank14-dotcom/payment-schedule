@@ -230,7 +230,7 @@ header span{font-size:12px;color:#8fafc8}
         <div class="form-group"><label class="form-label">วันเริ่มสัญญา</label><input class="form-input" type="date" id="m_start"></div>
         <div class="form-group"><label class="form-label">วันสิ้นสุดสัญญา</label><input class="form-input" type="date" id="m_end"></div>
       </div>
-      <div class="form-group"><label class="form-label">มูลค่าสัญญารวม (บาท)</label><input class="form-input" type="number" id="m_value" placeholder="0"></div>
+      <div class="form-group"><label class="form-label">มูลค่าสัญญารวม (บาท)</label><input class="form-input" type="number" id="m_value" placeholder="0" oninput="onContractValueInput()"></div>
       <div class="form-group">
         <label class="form-label">เงินดาวน์ (บาท)</label>
         <input class="form-input" type="number" id="m_down" placeholder="0">
@@ -259,6 +259,33 @@ header span{font-size:12px;color:#8fafc8}
       </div>
       <div class="form-group"><label class="form-label">ผู้ติดต่อ</label><input class="form-input" id="m_contact" placeholder="ชื่อ / โทร / อีเมล"></div>
       <div class="form-group"><label class="form-label">เงื่อนไขการชำระ</label><textarea class="form-textarea" id="m_terms" placeholder="เช่น ชำระทุกวันที่ 5 ของเดือน…"></textarea></div>
+      <div class="form-group">
+        <label class="form-label">นายหน้า</label>
+        <div style="display:flex;gap:12px;margin-top:4px;align-items:center;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="radio" name="agentType" id="m_agent_no" value="no" style="accent-color:#1C2B3A" onchange="toggleAgentFields()">
+            <span>ไม่มีนายหน้า</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="radio" name="agentType" id="m_agent_yes" value="yes" style="accent-color:#d97706" onchange="toggleAgentFields()">
+            <span>🤝 มีนายหน้า</span>
+          </label>
+        </div>
+      </div>
+      <div id="agentFieldsGroup" style="display:none">
+        <div class="form-group"><label class="form-label">ชื่อนายหน้า</label><input class="form-input" id="m_agent_name" placeholder="ชื่อนายหน้า"></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">เปอร์เซ็นต์ (%)</label>
+            <input class="form-input" type="number" id="m_agent_pct" placeholder="0" step="0.1" min="0" max="100" oninput="onAgentPctInput()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">ยอดค่านายหน้า (บาท)</label>
+            <input class="form-input" type="number" id="m_agent_amount" placeholder="0" oninput="onAgentAmountInput()">
+          </div>
+        </div>
+        <div id="agentPreview" style="font-size:12px;color:var(--text-secondary);margin-top:-4px"></div>
+      </div>
     </div>
     <div class="modal-footer"><button class="btn-cancel" onclick="closeContractModal()">ยกเลิก</button><button class="btn-save" onclick="saveContract()">บันทึก</button></div>
   </div>
@@ -349,7 +376,7 @@ window._fbSave = function(g){
 </script>
 <script>
 const SK='pmt_v4';
-function mkC(o){return Object.assign({no:'',project:'',start:'',end:'',value:0,down:0,downType:'transfer',downSlip:null,contact:'',terms:''},o||{})}
+function mkC(o){return Object.assign({no:'',project:'',start:'',end:'',value:0,down:0,downType:'transfer',downSlip:null,contact:'',terms:'',hasAgent:false,agentName:'',agentPct:0,agentAmount:0},o||{})}
 function mkInst(no,date,amount){return{id:'i'+Date.now()+Math.floor(Math.random()*9999),no,date:date||'',amount:amount||0,status:'pending',slip:null,cash:false}}
 function mkCustomer(id){return{id,name:'',contract:mkC(),note:'',installments:[]}}
 function mkGroup(id){return{id,name:'โครงการใหม่',colorIdx:id%8,collapsed:false,customers:[]}}
@@ -474,6 +501,10 @@ function findByInstId(iid){
 }
 function totalDue(c){return(c.installments||[]).reduce((a,i)=>a+(i.amount||0),0)}
 function totalContractValue(c){return c.contract&&c.contract.value?c.contract.value:0}
+function agentFee(c){
+  if(!c.contract||!c.contract.hasAgent)return 0;
+  return c.contract.agentAmount||0;
+}
 function totalPaid(c){return(c.installments||[]).filter(i=>i.status==='paid').reduce((a,i)=>a+(i.amount||0),0)}
 function overallStatus(c){
   const ins=c.installments||[];
@@ -500,6 +531,7 @@ function renderSummary(){
   const ov=all.filter(c=>overallStatus(c)==='overdue').length;
   const allInst=all.flatMap(c=>c.installments||[]);
   const paidInst=allInst.filter(i=>i.status==='paid').length;
+  const totalAgentFee=all.reduce((a,c)=>a+agentFee(c),0);
 
   // per-group stats
   const groupStats=groups.map(g=>{
@@ -507,6 +539,7 @@ function renderSummary(){
     const gTotal=custs.reduce((a,c)=>a+totalContractValue(c),0);
     const gPaid=custs.reduce((a,c)=>a+totalPaid(c),0);
     const gDown=custs.reduce((a,c)=>a+totalDown(c),0);
+    const gAgentFee=custs.reduce((a,c)=>a+agentFee(c),0);
     const COLOR=['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316'];
     const col=COLOR[g.colorIdx%COLOR.length];
     return `<div class="stat" style="border-left:3px solid ${col};padding-left:.8rem">
@@ -515,6 +548,7 @@ function renderSummary(){
       <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-top:2px">฿${fmt(gTotal)}</div>
       <div style="font-size:11px;color:#16a34a">ชำระ ฿${fmt(gPaid)}</div>
       ${gDown?`<div style="font-size:11px;color:#d97706">ดาวน์ ฿${fmt(gDown)}</div>`:''}
+      ${gAgentFee?`<div style="font-size:11px;color:#7c3aed">🤝 ค่านายหน้า ฿${fmt(gAgentFee)}</div>`:''}
     </div>`;
   }).join('');
 
@@ -526,6 +560,7 @@ function renderSummary(){
     <div class="stat"><div class="stat-label">ค้างชำระ</div><div class="stat-value amber">฿${fmt(total-td-tp)}</div></div>
     <div class="stat"><div class="stat-label">งวด</div><div class="stat-value">${paidInst}/${allInst.length}</div></div>
     <div class="stat"><div class="stat-label">เกินกำหนด</div><div class="stat-value red">${ov} ราย</div></div>
+    <div class="stat" style="border-left:3px solid #7c3aed;padding-left:.8rem"><div class="stat-label" style="color:#7c3aed">🤝 ค่านายหน้ารวม</div><div class="stat-value" style="color:#7c3aed">฿${fmt(totalAgentFee)}</div></div>
     <div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">${groupStats}</div>
   `;
 }
@@ -671,6 +706,7 @@ function groupHtml(g,q){
   const tcv=custFiltered.reduce((a,c)=>a+totalContractValue(c),0);
   const tp=custFiltered.reduce((a,c)=>a+totalPaid(c),0);
   const tdown=custFiltered.reduce((a,c)=>a+totalDown(c),0);
+  const tagent=custFiltered.reduce((a,c)=>a+agentFee(c),0);
   const ov=custFiltered.filter(c=>overallStatus(c)==='overdue').length;
   const allInst=custFiltered.flatMap(c=>c.installments||[]);
   const paidInst=allInst.filter(i=>i.status==='paid').length;
@@ -691,6 +727,10 @@ function groupHtml(g,q){
       ${tdown?`<div style="background:var(--bg-secondary);border-radius:8px;padding:8px 10px;border-left:3px solid #d97706">
         <div style="font-size:10px;color:var(--text-secondary);font-weight:600;letter-spacing:.3px">เงินดาวน์รวม</div>
         <div style="font-size:16px;font-weight:700;color:#d97706;margin-top:2px">฿${fmt(tdown)}</div>
+      </div>`:''}
+      ${tagent?`<div style="background:var(--bg-secondary);border-radius:8px;padding:8px 10px;border-left:3px solid #7c3aed">
+        <div style="font-size:10px;color:var(--text-secondary);font-weight:600;letter-spacing:.3px">🤝 ค่านายหน้ารวม</div>
+        <div style="font-size:16px;font-weight:700;color:#7c3aed;margin-top:2px">฿${fmt(tagent)}</div>
       </div>`:''}
       <div style="background:var(--bg-secondary);border-radius:8px;padding:8px 10px;border-left:3px solid #16a34a">
         <div style="font-size:10px;color:var(--text-secondary);font-weight:600;letter-spacing:.3px">ชำระงวดแล้ว</div>
@@ -717,7 +757,7 @@ function groupHtml(g,q){
         <div class="group-color-bar gc-${g.colorIdx}"></div>
         <div class="group-title-wrap">
           <div class="group-name-display" id="gname-${g.id}" ondblclick="editGroupName(${g.id})" title="ดับเบิลคลิกเพื่อแก้ชื่อ">${esc(g.name)}</div>
-          <div class="group-sub">${custFiltered.length} ลูกค้า • ฿${fmt(tp)} / ฿${fmt(td)}${ov?' • <span style="color:#991b1b">⚠ '+ov+' รายเกินกำหนด</span>':''}</div>
+          <div class="group-sub">${custFiltered.length} ลูกค้า • ฿${fmt(tp)} / ฿${fmt(tcv)}${ov?' • <span style="color:#991b1b">⚠ '+ov+' รายเกินกำหนด</span>':''}</div>
         </div>
       </div>
       <div class="group-header-right">
@@ -781,7 +821,7 @@ function customerCardHtml(g,c){
         <div class="ccard-avatar" style="background:${avBg[ci]};color:${avTx[ci]}">${initials(c.name)}</div>
         <div class="ccard-info">
           <div class="ccard-name">${esc(c.name)||'(ยังไม่มีชื่อ)'}</div>
-          <div class="ccard-sub">${esc(cLabel)} • ${insts.length} งวด${downAmt?` • ดาวน์ ${downTypeIcon} ฿${fmt(downAmt)}`:''}</div>
+          <div class="ccard-sub">${esc(cLabel)} • ${insts.length} งวด${downAmt?` • ดาวน์ ${downTypeIcon} ฿${fmt(downAmt)}`:''}${c.contract&&c.contract.hasAgent?` • 🤝 ${c.contract.agentPct||0}% (฿${fmt(agentFee(c))})`:''}</div>
         </div>
       </button>
       <div class="ccard-right">
@@ -841,6 +881,7 @@ function customerCardHtml(g,c){
         <div class="if-item">รอชำระ <strong style="color:#854d0e">${insts.filter(i=>i.status==='pending').length} งวด</strong></div>
         <div class="if-item">เกินกำหนด <strong style="color:#991b1b">${insts.filter(i=>i.status==='overdue').length} งวด</strong></div>
         <div class="if-item">ยอดรวม <strong>฿${fmt(td)}</strong></div>
+        ${c.contract&&c.contract.hasAgent?`<div class="if-item">🤝 ${esc(c.contract.agentName||'นายหน้า')} <strong style="color:#7c3aed">${c.contract.agentPct||0}% = ฿${fmt(agentFee(c))}</strong></div>`:''}
       </div>
     </div>
   </div>`;
@@ -1002,7 +1043,57 @@ function openContractModal(gid,cid){
     btn.textContent='📎 แนบสลิป';btn.classList.remove('has-slip');
     nameEl.textContent='';
   }
+  // agent
+  const hasAgent=!!ct.hasAgent;
+  document.getElementById('m_agent_no').checked=!hasAgent;
+  document.getElementById('m_agent_yes').checked=hasAgent;
+  document.getElementById('m_agent_name').value=ct.agentName||'';
+  document.getElementById('m_agent_pct').value=ct.agentPct||'';
+  document.getElementById('m_agent_amount').value=ct.agentAmount||'';
+  document.getElementById('agentFieldsGroup').style.display=hasAgent?'block':'none';
+  updateAgentPreview();
   document.getElementById('contractModal').classList.remove('hidden');
+}
+function toggleAgentFields(){
+  const yes=document.getElementById('m_agent_yes').checked;
+  document.getElementById('agentFieldsGroup').style.display=yes?'block':'none';
+  updateAgentPreview();
+}
+// เมื่อพิมพ์ % → คำนวณยอดเงินให้อัตโนมัติ
+function onAgentPctInput(){
+  const value=parseMoney(document.getElementById('m_value').value);
+  const pct=parseFloat(document.getElementById('m_agent_pct').value)||0;
+  if(value>0){
+    document.getElementById('m_agent_amount').value=Math.round(value*pct/100);
+  }
+  updateAgentPreview();
+}
+// เมื่อพิมพ์ยอดเงิน → คำนวณ % ย้อนกลับให้อัตโนมัติ
+function onAgentAmountInput(){
+  const value=parseMoney(document.getElementById('m_value').value);
+  const amount=parseMoney(document.getElementById('m_agent_amount').value);
+  if(value>0){
+    document.getElementById('m_agent_pct').value=Math.round((amount/value*100)*100)/100;
+  }
+  updateAgentPreview();
+}
+// เมื่อแก้มูลค่าสัญญา → คำนวณยอดเงินใหม่จาก % เดิม (ถ้ามี)
+function onContractValueInput(){
+  const value=parseMoney(document.getElementById('m_value').value);
+  const pct=parseFloat(document.getElementById('m_agent_pct').value)||0;
+  if(value>0&&pct>0){
+    document.getElementById('m_agent_amount').value=Math.round(value*pct/100);
+  }
+  updateAgentPreview();
+}
+function updateAgentPreview(){
+  const yes=document.getElementById('m_agent_yes').checked;
+  const preview=document.getElementById('agentPreview');
+  if(!yes){preview.textContent='';return;}
+  const value=parseMoney(document.getElementById('m_value').value);
+  const pct=parseFloat(document.getElementById('m_agent_pct').value)||0;
+  const amount=parseMoney(document.getElementById('m_agent_amount').value);
+  preview.textContent=value>0&&(pct>0||amount>0)?`฿${fmt(value)} × ${pct}% = ฿${fmt(amount)}`:'';
 }
 function closeContractModal(){document.getElementById('contractModal').classList.add('hidden');contractEditKey=null;}
 function saveContract(){
@@ -1022,7 +1113,11 @@ function saveContract(){
     downType,
     downSlip:preview.src&&preview.style.display!=='none'?preview.src:existDown,
     contact:document.getElementById('m_contact').value.trim(),
-    terms:document.getElementById('m_terms').value.trim()
+    terms:document.getElementById('m_terms').value.trim(),
+    hasAgent:document.getElementById('m_agent_yes').checked,
+    agentName:document.getElementById('m_agent_name').value.trim(),
+    agentPct:parseFloat(document.getElementById('m_agent_pct').value)||0,
+    agentAmount:parseMoney(document.getElementById('m_agent_amount').value)
   });
   save();closeContractModal();render();
 }
