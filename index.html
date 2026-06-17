@@ -473,6 +473,7 @@ function findByInstId(iid){
   return null;
 }
 function totalDue(c){return(c.installments||[]).reduce((a,i)=>a+(i.amount||0),0)}
+function totalContractValue(c){return c.contract&&c.contract.value?c.contract.value:0}
 function totalPaid(c){return(c.installments||[]).filter(i=>i.status==='paid').reduce((a,i)=>a+(i.amount||0),0)}
 function overallStatus(c){
   const ins=c.installments||[];
@@ -493,7 +494,7 @@ function nextStatus(s){return s==='pending'?'paid':s==='paid'?'overdue':'pending
 function totalDown(c){return c.contract&&c.contract.down?c.contract.down:0}
 function renderSummary(){
   const all=allCustomers();
-  const total=all.reduce((a,c)=>a+totalDue(c),0);
+  const total=all.reduce((a,c)=>a+totalContractValue(c),0);
   const tp=all.reduce((a,c)=>a+totalPaid(c),0);
   const td=all.reduce((a,c)=>a+totalDown(c),0);
   const ov=all.filter(c=>overallStatus(c)==='overdue').length;
@@ -503,7 +504,7 @@ function renderSummary(){
   // per-group stats
   const groupStats=groups.map(g=>{
     const custs=g.customers;
-    const gTotal=custs.reduce((a,c)=>a+totalDue(c),0);
+    const gTotal=custs.reduce((a,c)=>a+totalContractValue(c),0);
     const gPaid=custs.reduce((a,c)=>a+totalPaid(c),0);
     const gDown=custs.reduce((a,c)=>a+totalDown(c),0);
     const COLOR=['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316'];
@@ -522,7 +523,7 @@ function renderSummary(){
     <div class="stat"><div class="stat-label">ยอดสัญญารวม</div><div class="stat-value">฿${fmt(total)}</div></div>
     <div class="stat"><div class="stat-label">เงินดาวน์รวม</div><div class="stat-value amber">฿${fmt(td)}</div></div>
     <div class="stat"><div class="stat-label">ชำระงวดแล้ว</div><div class="stat-value green">฿${fmt(tp)}</div></div>
-    <div class="stat"><div class="stat-label">ค้างชำระ</div><div class="stat-value amber">฿${fmt(total-tp)}</div></div>
+    <div class="stat"><div class="stat-label">ค้างชำระ</div><div class="stat-value amber">฿${fmt(total-td-tp)}</div></div>
     <div class="stat"><div class="stat-label">งวด</div><div class="stat-value">${paidInst}/${allInst.length}</div></div>
     <div class="stat"><div class="stat-label">เกินกำหนด</div><div class="stat-value red">${ov} ราย</div></div>
     <div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">${groupStats}</div>
@@ -667,7 +668,7 @@ function groupHtml(g,q){
     const proj=c.contract&&c.contract.project?c.contract.project:'';
     return c.name.toLowerCase().includes(q)||no.toLowerCase().includes(q)||proj.toLowerCase().includes(q);
   }):g.customers;
-  const td=custFiltered.reduce((a,c)=>a+totalDue(c),0);
+  const tcv=custFiltered.reduce((a,c)=>a+totalContractValue(c),0);
   const tp=custFiltered.reduce((a,c)=>a+totalPaid(c),0);
   const tdown=custFiltered.reduce((a,c)=>a+totalDown(c),0);
   const ov=custFiltered.filter(c=>overallStatus(c)==='overdue').length;
@@ -685,7 +686,7 @@ function groupHtml(g,q){
       </div>
       <div style="background:var(--bg-secondary);border-radius:8px;padding:8px 10px;border-left:3px solid ${col}">
         <div style="font-size:10px;color:var(--text-secondary);font-weight:600;letter-spacing:.3px">ยอดสัญญารวม</div>
-        <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-top:2px">฿${fmt(td)}</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-top:2px">฿${fmt(tcv)}</div>
       </div>
       ${tdown?`<div style="background:var(--bg-secondary);border-radius:8px;padding:8px 10px;border-left:3px solid #d97706">
         <div style="font-size:10px;color:var(--text-secondary);font-weight:600;letter-spacing:.3px">เงินดาวน์รวม</div>
@@ -697,7 +698,7 @@ function groupHtml(g,q){
       </div>
       <div style="background:var(--bg-secondary);border-radius:8px;padding:8px 10px;border-left:3px solid #d97706">
         <div style="font-size:10px;color:var(--text-secondary);font-weight:600;letter-spacing:.3px">ค้างชำระ</div>
-        <div style="font-size:16px;font-weight:700;color:#d97706;margin-top:2px">฿${fmt(td-tp)}</div>
+        <div style="font-size:16px;font-weight:700;color:#d97706;margin-top:2px">฿${fmt(tcv-tdown-tp)}</div>
       </div>
       <div style="background:var(--bg-secondary);border-radius:8px;padding:8px 10px;border-left:3px solid ${col}">
         <div style="font-size:10px;color:var(--text-secondary);font-weight:600;letter-spacing:.3px">งวด</div>
