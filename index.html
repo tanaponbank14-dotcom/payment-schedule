@@ -32,6 +32,21 @@ header span{font-size:12px;color:#8fafc8}
 .theme-btn:hover{background:rgba(255,255,255,0.2)}
 .container{max-width:1200px;margin:0 auto;padding:1.5rem}
 
+/* Expenses */
+.expense-section{padding:10px 14px 14px;border-top:1px solid var(--border)}
+.expense-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.expense-title{font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px}
+.expense-table{width:100%;border-collapse:collapse;font-size:13px}
+.expense-table th{font-size:10px;font-weight:700;color:var(--text-muted);text-align:left;padding:4px 6px;border-bottom:1px solid var(--border)}
+.expense-table td{padding:4px 6px;border-bottom:1px solid var(--border-light)}
+.expense-table tr:last-child td{border-bottom:none}
+.exp-input{background:transparent;border:1px solid transparent;outline:none;color:var(--text-primary);font-size:13px;width:100%;padding:2px 4px;border-radius:4px}
+.exp-input:focus{background:var(--bg-field);border-color:var(--border-input)}
+.exp-total{display:flex;align-items:center;justify-content:space-between;padding:6px 6px 0;font-size:12px;font-weight:700;color:#dc2626;border-top:1px solid var(--border);margin-top:4px}
+.btn-add-exp{font-size:11px;padding:3px 10px;border-radius:6px;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-secondary);cursor:pointer}
+.btn-add-exp:hover{background:var(--bg-hover);color:var(--text-primary)}
+.del-exp-btn{background:none;border:none;cursor:pointer;color:#9ca3af;font-size:12px;padding:0 4px}
+.del-exp-btn:hover{color:#ef4444}
 /* Alert Panel */
 .alert-panel{margin-bottom:1.25rem;display:flex;flex-direction:column;gap:10px}
 .alert-section{border-radius:12px;overflow:hidden;border:1px solid}
@@ -219,6 +234,56 @@ header span{font-size:12px;color:#8fafc8}
   <div class="footer">คลิกที่ชื่อกลุ่มหรือชื่อลูกค้าเพื่อแก้ไข • ข้อมูลบันทึกอัตโนมัติในเบราว์เซอร์</div>
 </div>
 
+<!-- Land Modal -->
+<div class="modal-overlay hidden" id="landModal" onclick="if(event.target===this)closeLandModal()">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">📐 ข้อมูลที่ดินโครงการ</div>
+      <button class="modal-close" onclick="closeLandModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">คำนวณพื้นที่และต้นทุนที่ดินรวมของโครงการ</div>
+
+      <div class="form-group">
+        <label class="form-label">ขนาดที่ดิน (กว้าง × ยาว เมตร)</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input class="form-input" type="number" id="land_w" placeholder="กว้าง" min="0" step="0.01" oninput="calcLand()" style="flex:1">
+          <span style="color:var(--text-secondary);font-size:16px">×</span>
+          <input class="form-input" type="number" id="land_l" placeholder="ยาว" min="0" step="0.01" oninput="calcLand()" style="flex:1">
+          <span style="color:var(--text-secondary);font-size:13px;white-space:nowrap">ม.</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">ราคาต้นทุนต่อ ตร.ม. (บาท)</label>
+        <input class="form-input" type="number" id="land_price" placeholder="0" min="0" oninput="calcLand()">
+      </div>
+
+      <div id="landCalcResult" style="background:var(--bg-secondary);border-radius:10px;padding:12px 14px;margin-top:4px;display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <div style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px">พื้นที่รวม</div>
+            <div id="land_sqm_display" style="font-size:20px;font-weight:700;color:var(--text-primary);margin-top:2px">0 ตร.ม.</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px">ต้นทุนที่ดินรวม</div>
+            <div id="land_cost_display" style="font-size:20px;font-weight:700;color:#dc2626;margin-top:2px">฿0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:12px">
+        <label class="form-label">หมายเหตุเพิ่มเติม</label>
+        <input class="form-input" id="land_note" placeholder="เช่น โฉนดเลขที่ xxx, แปลงรวม ฯลฯ">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeLandModal()">ยกเลิก</button>
+      <button class="btn-primary" onclick="saveLand()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <!-- Contract Modal -->
 <div class="modal-overlay hidden" id="contractModal" onclick="if(event.target===this)closeContractModal()">
   <div class="modal">
@@ -356,8 +421,12 @@ onValue(dbRef, (snapshot) => {
     try{localCollapsed = JSON.parse(localStorage.getItem('pmt_collapsed_v1'))||{};}catch(e){}
     groups = arr.map(g => ({
       ...g,
-      // collapsed ใช้ค่าจากเครื่องนี้เอง ไม่รับจาก Firebase เพื่อไม่ให้เปิด/ปิดกลุ่มพร้อมกันข้ามเครื่อง
       collapsed: localCollapsed.hasOwnProperty(g.id) ? localCollapsed[g.id] : !!g.collapsed,
+      land: g.land || {w:0,l:0,pricePerSqm:0,sqm:0,cost:0,note:''},
+      // parse expenses (Firebase อาจส่งเป็น object หรือ array)
+      expenses: g.expenses
+        ? (Array.isArray(g.expenses) ? g.expenses : Object.values(g.expenses))
+        : [],
       customers: g.customers
         ? (Array.isArray(g.customers) ? g.customers : Object.values(g.customers)).map(c => ({
             ...c,
@@ -397,7 +466,8 @@ function setLocalCollapsed(gid,val){
 function mkC(o){return Object.assign({no:'',project:'',start:'',end:'',value:0,down:0,downType:'transfer',downSlip:null,contact:'',terms:'',hasAgent:false,agentName:'',agentPct:0,agentAmount:0},o||{})}
 function mkInst(no,date,amount){return{id:'i'+Date.now()+Math.floor(Math.random()*9999),no,date:date||'',amount:amount||0,status:'pending',slip:null,cash:false}}
 function mkCustomer(id){return{id,name:'',contract:mkC(),note:'',installments:[]}}
-function mkGroup(id){return{id,name:'โครงการใหม่',colorIdx:id%8,collapsed:false,customers:[]}}
+function mkGroup(id){return{id,name:'โครงการใหม่',colorIdx:id%8,collapsed:false,customers:[],expenses:[],land:{w:0,l:0,pricePerSqm:0,note:''}}}
+function mkExpense(name,amount,date){return{id:'e'+Date.now()+Math.floor(Math.random()*9999),name:name||'',amount:amount||0,date:date||new Date().toISOString().slice(0,10)}}
 
 let groups=JSON.parse(localStorage.getItem(SK)||'null')||[
   {id:1,name:'โพนค้อ',colorIdx:0,collapsed:false,customers:[
@@ -541,6 +611,29 @@ function nextStatus(s){return s==='pending'?'paid':s==='paid'?'overdue':'pending
 
 // ----- summary -----
 function totalDown(c){return c.contract&&c.contract.down?c.contract.down:0}
+function totalExpenses(g){return(g.expenses||[]).reduce((a,e)=>a+(e.amount||0),0)}
+function addExpense(gid){
+  const g=groups.find(x=>x.id===gid);if(!g)return;
+  if(!g.expenses)g.expenses=[];
+  g.expenses.push(mkExpense('',0,new Date().toISOString().slice(0,10)));
+  save();render();
+  // focus ชื่อรายการล่าสุด
+  setTimeout(()=>{
+    const inputs=document.querySelectorAll(`.exp-name-${gid}`);
+    if(inputs.length)inputs[inputs.length-1].focus();
+  },50);
+}
+function delExpense(gid,eid){
+  const g=groups.find(x=>x.id===gid);if(!g)return;
+  g.expenses=(g.expenses||[]).filter(e=>e.id!==eid);
+  save();render();
+}
+function updExpense(gid,eid,field,val){
+  const g=groups.find(x=>x.id===gid);if(!g)return;
+  const e=(g.expenses||[]).find(x=>x.id===eid);if(!e)return;
+  e[field]=field==='amount'?parseMoney(val):val;
+  save();render();
+}
 function renderSummary(){
   const all=allCustomers();
   const total=all.reduce((a,c)=>a+totalContractValue(c),0);
@@ -584,6 +677,11 @@ function renderSummary(){
 }
 
 let alertCollapsed={};
+let expCollapsed={};
+function toggleExpSection(gid){
+  expCollapsed[gid]=!expCollapsed[gid];
+  render();
+}
 
 // ----- alert panel -----
 function toggleAlertGroup(key){
@@ -766,6 +864,60 @@ function groupHtml(g,q){
         <div style="font-size:10px;color:var(--text-secondary);font-weight:600;letter-spacing:.3px">เกินกำหนด</div>
         <div style="font-size:16px;font-weight:700;color:#dc2626;margin-top:2px">${ov} ราย</div>
       </div>`:''}
+      <div style="background:#fef2f2;border-radius:8px;padding:8px 10px;border-left:3px solid #dc2626">
+        <div style="font-size:10px;color:var(--text-secondary);font-weight:600;letter-spacing:.3px">💸 ค่าใช้จ่ายรวม</div>
+        <div style="font-size:16px;font-weight:700;color:#dc2626;margin-top:2px">฿${fmt(totalExpenses(g))}</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:2px">${(g.expenses||[]).length} รายการ</div>
+      </div>
+      ${landSqm(g)?`<div style="background:var(--bg-secondary);border-radius:8px;padding:8px 10px;border-left:3px solid #0284c7">
+        <div style="font-size:10px;color:var(--text-secondary);font-weight:600;letter-spacing:.3px">📐 ที่ดินโครงการ</div>
+        <div style="font-size:16px;font-weight:700;color:#0284c7;margin-top:2px">${(g.land.sqm||0).toLocaleString('th-TH',{maximumFractionDigits:2})} ตร.ม.</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:2px">${g.land.w||0}×${g.land.l||0} ม. • ต้นทุน ฿${fmt(landCost(g))}</div>
+      </div>`:''}
+      <div style="background:#f0fdf4;border-radius:8px;padding:8px 10px;border-left:3px solid #16a34a">
+        <div style="font-size:10px;color:var(--text-secondary);font-weight:600;letter-spacing:.3px">💰 รับเข้าจริง - รายจ่าย</div>
+        <div style="font-size:16px;font-weight:700;color:#16a34a;margin-top:2px">฿${fmt((tdown+tp)-(totalExpenses(g)+landCost(g)))}</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:2px">รับเข้า ฿${fmt(tdown+tp)} − จ่ายออก ฿${fmt(totalExpenses(g)+landCost(g))}</div>
+      </div>
+    </div>`;
+
+  // ตารางค่าใช้จ่าย
+  const expenses=g.expenses||[];
+  const expOpen=!expCollapsed[g.id];
+  const expChev=expOpen?'▼':'▶';
+  const expSection=`
+    <div class="expense-section">
+      <div class="expense-header">
+        <span class="expense-title" style="cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none" onclick="toggleExpSection(${g.id})">
+          <span style="font-size:9px;opacity:.6">${expChev}</span>
+          💸 ค่าใช้จ่ายโครงการ
+          <span style="font-weight:400;color:var(--text-muted);font-size:10px">(${expenses.length} รายการ • ฿${fmt(totalExpenses(g))})</span>
+        </span>
+        ${expOpen?`<button class="btn-add-exp" onclick="addExpense(${g.id})">＋ เพิ่มรายการ</button>`:''}
+      </div>
+      ${expOpen?`${expenses.length?`
+      <table class="expense-table">
+        <thead><tr>
+          <th style="width:40%">รายการ</th>
+          <th style="width:20%;text-align:center">วันที่</th>
+          <th style="width:30%;text-align:right">ยอด (บาท)</th>
+          <th style="width:10%"></th>
+        </tr></thead>
+        <tbody>
+          ${expenses.map(e=>`
+          <tr>
+            <td><input class="exp-input exp-name-${g.id}" value="${esc(e.name)}" placeholder="ชื่อรายการ…" onchange="updExpense(${g.id},'${e.id}','name',this.value)"></td>
+            <td><input class="exp-input" type="date" value="${esc(e.date)}" onchange="updExpense(${g.id},'${e.id}','date',this.value)" style="text-align:center"></td>
+            <td><input class="exp-input" value="${fmt(e.amount)}" onblur="updExpense(${g.id},'${e.id}','amount',this.value);this.value=fmt(parseMoney(this.value))" style="text-align:right"></td>
+            <td style="text-align:center"><button class="del-exp-btn" onclick="delExpense(${g.id},'${e.id}')">🗑</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="exp-total">
+        <span>รวมค่าใช้จ่าย</span>
+        <span>฿${fmt(totalExpenses(g))}</span>
+      </div>`
+      :`<div style="text-align:center;padding:.75rem;color:#9ca3af;font-size:12px">ยังไม่มีค่าใช้จ่าย — กด ＋ เพิ่มรายการ</div>`}`:''}
     </div>`;
 
   return `
@@ -780,6 +932,7 @@ function groupHtml(g,q){
       </div>
       <div class="group-header-right">
         <span class="badge gb-${g.colorIdx}">${custFiltered.length} ราย</span>
+        <button class="icon-btn" onclick="openLandModal(${g.id})" title="ข้อมูลที่ดินโครงการ">📐</button>
         <button class="icon-btn" onclick="editGroupName(${g.id})" title="แก้ชื่อกลุ่ม">✏️</button>
         <button class="icon-btn" onclick="addCustomerToGroup(${g.id})" title="เพิ่มลูกค้า">＋</button>
         <button class="icon-btn danger" onclick="delGroup(${g.id})" title="ลบกลุ่ม">🗑</button>
@@ -788,6 +941,7 @@ function groupHtml(g,q){
     </div>
     <div class="group-body ${forceOpen?'':'collapsed'}" id="gbody-${g.id}">
       ${custFiltered.length?miniDash:''}
+      ${expSection}
       ${custFiltered.length?custFiltered.map(c=>customerCardHtml(g,c)).join(''):'<div style="text-align:center;padding:1.5rem;color:#9ca3af;font-size:13px">ยังไม่มีลูกค้า — กด ＋ เพื่อเพิ่ม</div>'}
     </div>
   </div>`;
@@ -912,6 +1066,46 @@ function toggleGroup(gid){
   setLocalCollapsed(gid,g.collapsed);
   save();render();
 }
+// ----- land modal -----
+let landEditGid=null;
+function openLandModal(gid){
+  landEditGid=gid;
+  const g=groups.find(x=>x.id===gid);if(!g)return;
+  const ld=g.land||{w:0,l:0,pricePerSqm:0,note:''};
+  document.getElementById('land_w').value=ld.w||'';
+  document.getElementById('land_l').value=ld.l||'';
+  document.getElementById('land_price').value=ld.pricePerSqm||'';
+  document.getElementById('land_note').value=ld.note||'';
+  calcLand();
+  document.getElementById('landModal').classList.remove('hidden');
+}
+function closeLandModal(){document.getElementById('landModal').classList.add('hidden');landEditGid=null;}
+function calcLand(){
+  const w=parseFloat(document.getElementById('land_w').value)||0;
+  const l=parseFloat(document.getElementById('land_l').value)||0;
+  const price=parseMoney(document.getElementById('land_price').value);
+  const sqm=w*l;
+  const cost=sqm*price;
+  const result=document.getElementById('landCalcResult');
+  if(w>0||l>0||price>0){
+    result.style.display='block';
+    document.getElementById('land_sqm_display').textContent=`${sqm.toLocaleString('th-TH',{maximumFractionDigits:2})} ตร.ม.`;
+    document.getElementById('land_cost_display').textContent=`฿${fmt(cost)}`;
+  } else {
+    result.style.display='none';
+  }
+}
+function saveLand(){
+  const g=groups.find(x=>x.id===landEditGid);if(!g)return;
+  const w=parseFloat(document.getElementById('land_w').value)||0;
+  const l=parseFloat(document.getElementById('land_l').value)||0;
+  const price=parseMoney(document.getElementById('land_price').value);
+  g.land={w,l,pricePerSqm:price,sqm:w*l,cost:w*l*price,note:document.getElementById('land_note').value.trim()};
+  save();closeLandModal();render();
+}
+function landSqm(g){return g.land&&g.land.sqm?g.land.sqm:0}
+function landCost(g){return g.land&&g.land.cost?g.land.cost:0}
+
 function editGroupName(gid){
   const g=groups.find(x=>x.id===gid);if(!g)return;
   const display=document.getElementById('gname-'+gid);if(!display)return;
