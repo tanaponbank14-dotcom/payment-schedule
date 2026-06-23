@@ -1403,4 +1403,106 @@ function closeContractModal(){document.getElementById('contractModal').classList
 function saveContract(){
   if(!contractEditKey)return;
   const {gid,cid}=contractEditKey;
-  const g=groups.find(x=>x.id===gid);const c=g&&g.customers.find(x=>x.id===cid);if(
+  const g=groups.find(x=>x.id===gid);const c=g&&g.customers.find(x=>x.id===cid);if(!c)return;
+  const downType=document.querySelector('input[name="downType"]:checked')?.value||'transfer';
+  const preview=document.getElementById('m_down_slip_preview');
+  const existDown=c.contract&&c.contract.downSlip?c.contract.downSlip:null;
+  c.contract=mkC({
+    no:document.getElementById('m_no').value.trim(),
+    project:document.getElementById('m_project').value.trim(),
+    start:document.getElementById('m_start').value,
+    end:document.getElementById('m_end').value,
+    value:parseMoney(document.getElementById('m_value').value),
+    down:parseMoney(document.getElementById('m_down').value),
+    downType,
+    downSlip:preview.src&&preview.style.display!=='none'?preview.src:existDown,
+    contact:document.getElementById('m_contact').value.trim(),
+    terms:document.getElementById('m_terms').value.trim(),
+    hasAgent:document.getElementById('m_agent_yes').checked,
+    agentName:document.getElementById('m_agent_name').value.trim(),
+    agentPct:parseFloat(document.getElementById('m_agent_pct').value)||0,
+    agentAmount:parseMoney(document.getElementById('m_agent_amount').value)
+  });
+  save();closeContractModal();render();
+}
+function downSlipClick(){document.getElementById('m_down_slip_input').click();}
+function handleDownSlip(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const preview=document.getElementById('m_down_slip_preview');
+    const btn=document.getElementById('m_down_slip_btn');
+    const nameEl=document.getElementById('m_down_slip_name');
+    preview.src=e.target.result;preview.style.display='block';
+    btn.textContent='🧾 ดูสลิป / เปลี่ยน';btn.classList.add('has-slip');
+    nameEl.textContent=file.name;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ----- gen modal -----
+function openGenModal(gid,cid){
+  genEditKey={gid,cid};
+  const g=groups.find(x=>x.id===gid);const c=g&&g.customers.find(x=>x.id===cid);
+  const v=c&&c.contract&&c.contract.value?c.contract.value:0;
+  document.getElementById('g_count').value=12;
+  document.getElementById('g_amount').value=v?Math.round(v/12):'';
+  document.getElementById('g_startdate').value='';
+  document.getElementById('g_interval').value=1;
+  document.getElementById('genModal').classList.remove('hidden');
+}
+function closeGenModal(){document.getElementById('genModal').classList.add('hidden');genEditKey=null;}
+function generateInstallments(){
+  if(!genEditKey)return;
+  const {gid,cid}=genEditKey;
+  const g=groups.find(x=>x.id===gid);const c=g&&g.customers.find(x=>x.id===cid);if(!c)return;
+  const count=parseInt(document.getElementById('g_count').value)||1;
+  const amount=parseMoney(document.getElementById('g_amount').value);
+  const startStr=document.getElementById('g_startdate').value;
+  const interval=parseInt(document.getElementById('g_interval').value)||1;
+  const start=startStr?new Date(startStr):new Date();
+  c.installments=[];
+  for(let i=0;i<count;i++){
+    const d=new Date(start);d.setMonth(d.getMonth()+i*interval);
+    c.installments.push({id:'i'+Date.now()+i,no:i+1,date:d.toISOString().split('T')[0],amount,status:'pending',slip:null});
+  }
+  save();closeGenModal();render();
+}
+
+// ----- export -----
+function exportCSV(){
+  const rows=[['กลุ่ม/โครงการ','ชื่อลูกค้า','เลขสัญญา','งวดที่','วันครบกำหนด','ยอด (บาท)','สถานะ']];
+  const st={paid:'ชำระแล้ว',pending:'รอชำระ',overdue:'เกินกำหนด'};
+  groups.forEach(g=>g.customers.forEach(c=>(c.installments||[]).forEach(i=>{
+    rows.push([g.name,c.name,c.contract&&c.contract.no||'',i.no,i.date,i.amount,st[i.status]||i.status]);
+  })));
+  const csv=rows.map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='payment_schedule.csv';a.click();
+}
+
+document.getElementById('search').addEventListener('input',()=>render());
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeContractModal();closeGenModal();closeSlipModal();}
+});
+
+function toggleTheme(){
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  const t=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  localStorage.setItem('pmt_theme',t);
+  document.getElementById('themeBtn').textContent=t==='dark'?'☀️ กลางวัน':'🌙 กลางคืน';
+}
+(function(){
+  const t=localStorage.getItem('pmt_theme')||'light';
+  if(t==='dark'){
+    document.documentElement.setAttribute('data-theme','dark');
+    document.getElementById('themeBtn').textContent='☀️ กลางวัน';
+  }
+})();
+
+document.getElementById('updated').textContent='อัปเดต '+new Date().toLocaleString('th-TH');
+render();
+</script>
+</body>
+</html>
