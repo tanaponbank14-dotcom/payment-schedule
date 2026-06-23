@@ -257,11 +257,11 @@ header span{font-size:12px;color:#8fafc8}
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">ราคาต้นทุนต่อ ตร.ม. (บาท)</label>
-          <input class="form-input" type="number" id="land_price" placeholder="0" min="0" oninput="onLandPriceInput()">
+          <input class="form-input" type="text" inputmode="decimal" id="land_price" placeholder="0" oninput="onMoneyInput(this);onLandPriceInput()">
         </div>
         <div class="form-group">
           <label class="form-label">ต้นทุนที่ดินรวม (บาท)</label>
-          <input class="form-input" type="number" id="land_cost_input" placeholder="0" min="0" oninput="onLandCostInput()">
+          <input class="form-input" type="text" inputmode="decimal" id="land_cost_input" placeholder="0" oninput="onMoneyInput(this);onLandCostInput()">
         </div>
       </div>
 
@@ -301,10 +301,10 @@ header span{font-size:12px;color:#8fafc8}
         <div class="form-group"><label class="form-label">วันเริ่มสัญญา</label><input class="form-input" type="date" id="m_start"></div>
         <div class="form-group"><label class="form-label">วันสิ้นสุดสัญญา</label><input class="form-input" type="date" id="m_end"></div>
       </div>
-      <div class="form-group"><label class="form-label">มูลค่าสัญญารวม (บาท)</label><input class="form-input" type="number" id="m_value" placeholder="0" oninput="onContractValueInput()"></div>
+      <div class="form-group"><label class="form-label">มูลค่าสัญญารวม (บาท)</label><input class="form-input" type="text" inputmode="decimal" id="m_value" placeholder="0" oninput="onMoneyInput(this);onContractValueInput()"></div>
       <div class="form-group">
         <label class="form-label">เงินดาวน์ (บาท)</label>
-        <input class="form-input" type="number" id="m_down" placeholder="0">
+        <input class="form-input" type="text" inputmode="decimal" id="m_down" placeholder="0" oninput="onMoneyInput(this)">
       </div>
       <div class="form-group">
         <label class="form-label">ประเภทการชำระเงินดาวน์</label>
@@ -352,7 +352,7 @@ header span{font-size:12px;color:#8fafc8}
           </div>
           <div class="form-group">
             <label class="form-label">ยอดค่านายหน้า (บาท)</label>
-            <input class="form-input" type="number" id="m_agent_amount" placeholder="0" oninput="onAgentAmountInput()">
+            <input class="form-input" type="text" inputmode="decimal" id="m_agent_amount" placeholder="0" oninput="onMoneyInput(this);onAgentAmountInput()">
           </div>
         </div>
         <div id="agentPreview" style="font-size:12px;color:var(--text-secondary);margin-top:-4px"></div>
@@ -584,6 +584,24 @@ function save(){
 // ----- helpers -----
 function fmt(n){return Number(n||0).toLocaleString('th-TH')}
 function parseMoney(v){return parseFloat(String(v).replace(/[^0-9.]/g,''))||0}
+// format ตัวเลขใน input แบบ realtime ให้มี comma
+function fmtInput(v){
+  const raw=String(v).replace(/[^0-9.]/g,'');
+  if(!raw)return'';
+  const parts=raw.split('.');
+  parts[0]=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  return parts.join('.');
+}
+function onMoneyInput(el){
+  const pos=el.selectionStart;
+  const prev=el.value;
+  const raw=prev.replace(/[^0-9.]/g,'');
+  const formatted=fmtInput(raw);
+  el.value=formatted;
+  // adjust cursor position
+  const diff=formatted.length-prev.length;
+  try{el.setSelectionRange(pos+diff,pos+diff);}catch(e){}
+}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
 function initials(name){return(name||'?').trim().split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?'}
 const avBg=['#dbeafe','#d1fae5','#fef9c3','#fee2e2','#ede9fe','#fce7f3','#ccfbf1','#ffedd5'];
@@ -1119,8 +1137,8 @@ function openLandModal(gid){
   const ld=g.land||{w:0,l:0,pricePerSqm:0,sqm:0,cost:0,note:''};
   document.getElementById('land_w').value=ld.w||'';
   document.getElementById('land_l').value=ld.l||'';
-  document.getElementById('land_price').value=ld.pricePerSqm||'';
-  document.getElementById('land_cost_input').value=ld.cost||'';
+  document.getElementById('land_price').value=ld.pricePerSqm?fmtInput(String(ld.pricePerSqm)):'';
+  document.getElementById('land_cost_input').value=ld.cost?fmtInput(String(ld.cost)):'';
   document.getElementById('land_note').value=ld.note||'';
   calcLand();
   document.getElementById('landModal').classList.remove('hidden');
@@ -1141,7 +1159,7 @@ function calcLand(){
   const l=parseFloat(document.getElementById('land_l').value)||0;
   const price=parseMoney(document.getElementById('land_price').value);
   const sqm=w*l;const cost=sqm*price;
-  if(sqm>0&&price>0)document.getElementById('land_cost_input').value=cost;
+  if(sqm>0&&price>0)document.getElementById('land_cost_input').value=fmtInput(String(cost));
   _updateLandDisplay(sqm,cost||parseMoney(document.getElementById('land_cost_input').value));
 }
 // กรอก ตร.ม.×ราคา → คำนวณยอดรวมให้
@@ -1152,7 +1170,7 @@ function onLandSizeInput(){
   const sqm=w*l;
   if(price>0){
     const cost=sqm*price;
-    document.getElementById('land_cost_input').value=cost;
+    document.getElementById('land_cost_input').value=fmtInput(String(cost));
     _updateLandDisplay(sqm,cost);
   } else {
     const cost=parseMoney(document.getElementById('land_cost_input').value);
@@ -1167,7 +1185,7 @@ function onLandPriceInput(){
   const sqm=w*l;
   if(sqm>0){
     const cost=sqm*price;
-    document.getElementById('land_cost_input').value=cost;
+    document.getElementById('land_cost_input').value=fmtInput(String(cost));
     _updateLandDisplay(sqm,cost);
   } else {
     _updateLandDisplay(sqm,parseMoney(document.getElementById('land_cost_input').value));
@@ -1180,7 +1198,7 @@ function onLandCostInput(){
   const cost=parseMoney(document.getElementById('land_cost_input').value);
   const sqm=w*l;
   if(sqm>0&&cost>0){
-    document.getElementById('land_price').value=Math.round(cost/sqm*100)/100;
+    document.getElementById('land_price').value=fmtInput(String(Math.round(cost/sqm*100)/100));
   }
   _updateLandDisplay(sqm,cost);
 }
@@ -1326,8 +1344,8 @@ function openContractModal(gid,cid){
   document.getElementById('m_project').value=ct.project||'';
   document.getElementById('m_start').value=ct.start||'';
   document.getElementById('m_end').value=ct.end||'';
-  document.getElementById('m_value').value=ct.value||'';
-  document.getElementById('m_down').value=ct.down||'';
+  document.getElementById('m_value').value=ct.value?fmtInput(String(ct.value)):'';
+  document.getElementById('m_down').value=ct.down?fmtInput(String(ct.down)):'';
   document.getElementById('m_contact').value=ct.contact||'';
   document.getElementById('m_terms').value=ct.terms||'';
   // down type radio
