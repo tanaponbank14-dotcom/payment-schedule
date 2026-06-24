@@ -301,10 +301,37 @@ header span{font-size:12px;color:#8fafc8}
         <div class="form-group"><label class="form-label">วันเริ่มสัญญา</label><input class="form-input" type="date" id="m_start"></div>
         <div class="form-group"><label class="form-label">วันสิ้นสุดสัญญา</label><input class="form-input" type="date" id="m_end"></div>
       </div>
+      <div class="form-group">
+        <label class="form-label">📐 ขนาดที่ดิน (กว้าง × ยาว เมตร)</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input class="form-input" type="number" id="m_land_w" placeholder="กว้าง" min="0" step="0.01" oninput="calcContractLand()" style="flex:1">
+          <span style="color:var(--text-secondary);font-size:16px">×</span>
+          <input class="form-input" type="number" id="m_land_l" placeholder="ยาว" min="0" step="0.01" oninput="calcContractLand()" style="flex:1">
+          <span style="color:var(--text-secondary);font-size:13px;white-space:nowrap">ม.</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">ราคาต่อ ตร.ม. (บาท)</label>
+          <input class="form-input" type="text" inputmode="decimal" id="m_land_price" placeholder="0" oninput="onMoneyInput(this);calcContractLand()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">พื้นที่ & มูลค่า</label>
+          <div id="m_land_result" style="font-size:12px;color:var(--text-secondary);padding:6px 0;line-height:1.8">กรอกขนาดที่ดินเพื่อคำนวณ</div>
+        </div>
+      </div>
       <div class="form-group"><label class="form-label">มูลค่าสัญญารวม (บาท)</label><input class="form-input" type="text" inputmode="decimal" id="m_value" placeholder="0" onfocus="onMoneyFocus(this)" onblur="onMoneyBlur(this)" oninput="onMoneyInput(this);onContractValueInput()"></div>
       <div class="form-group">
-        <label class="form-label">เงินดาวน์ (บาท)</label>
-        <input class="form-input" type="text" inputmode="decimal" id="m_down" placeholder="0" onfocus="onMoneyFocus(this)" onblur="onMoneyBlur(this)" oninput="onMoneyInput(this)">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">มัดจำ (บาท)</label>
+          <input class="form-input money-input" type="text" inputmode="decimal" id="m_deposit" placeholder="0" oninput="onMoneyInput(this)" onblur="onMoneyBlur(this)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">เงินดาวน์ (บาท)</label>
+          <input class="form-input" type="text" inputmode="decimal" id="m_down" placeholder="0" onfocus="onMoneyFocus(this)" onblur="onMoneyBlur(this)" oninput="onMoneyInput(this)">
+        </div>
+      </div>
       </div>
       <div class="form-group">
         <label class="form-label">ประเภทการชำระเงินดาวน์</label>
@@ -352,8 +379,27 @@ header span{font-size:12px;color:#8fafc8}
           </div>
           <div class="form-group">
             <label class="form-label">ยอดค่านายหน้า (บาท)</label>
-            <input class="form-input" type="text" inputmode="decimal" id="m_agent_amount" placeholder="0" onfocus="onMoneyFocus(this)" onblur="onMoneyBlur(this)" oninput="onMoneyInput(this);onAgentAmountInput()">
+            <input class="form-input money-input" type="text" inputmode="decimal" id="m_agent_amount" placeholder="0" oninput="onMoneyInput(this);onAgentAmountInput()" onblur="onMoneyBlur(this)">
           </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;user-select:none">
+            <input type="checkbox" id="m_agent_is_kip" style="width:15px;height:15px;accent-color:#d97706" onchange="toggleAgentKip()">
+            <span>💱 จ่ายเป็นเงินกีบ (₭)</span>
+          </label>
+        </div>
+        <div id="agentKipGroup" style="display:none">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">ยอดกีบ (₭)</label>
+              <input class="form-input money-input" type="text" inputmode="decimal" id="m_agent_kip" placeholder="0" oninput="onMoneyInput(this);calcAgentKip()" onblur="onMoneyBlur(this)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">เรทแลกเปลี่ยน (₭/฿)</label>
+              <input class="form-input" type="number" id="m_agent_kip_rate" placeholder="690" value="690" oninput="calcAgentKip()">
+            </div>
+          </div>
+          <div id="agentKipPreview" style="font-size:12px;color:#d97706;margin-top:-4px;margin-bottom:8px"></div>
         </div>
         <div id="agentPreview" style="font-size:12px;color:var(--text-secondary);margin-top:-4px"></div>
       </div>
@@ -469,7 +515,7 @@ function setLocalCollapsed(gid,val){
   map[gid]=val;
   try{localStorage.setItem(COLLAPSE_KEY,JSON.stringify(map));}catch(e){}
 }
-function mkC(o){return Object.assign({no:'',project:'',start:'',end:'',value:0,down:0,downType:'transfer',downSlip:null,contact:'',terms:'',hasAgent:false,agentName:'',agentPct:0,agentAmount:0},o||{})}
+function mkC(o){return Object.assign({no:'',project:'',start:'',end:'',value:0,deposit:0,down:0,downType:'transfer',downSlip:null,contact:'',terms:'',hasAgent:false,agentName:'',agentPct:0,agentAmount:0,agentIsKip:false,agentKipAmount:0,agentKipRate:690,landW:0,landL:0,landPricePerSqm:0},o||{})}
 function mkInst(no,date,amount){return{id:'i'+Date.now()+Math.floor(Math.random()*9999),no,date:date||'',amount:amount||0,status:'pending',slip:null,cash:false}}
 function mkCustomer(id){return{id,name:'',contract:mkC(),note:'',installments:[]}}
 function mkGroup(id){return{id,name:'โครงการใหม่',colorIdx:id%8,collapsed:false,customers:[],expenses:[],land:{w:0,l:0,pricePerSqm:0,note:''}}}
@@ -1073,7 +1119,7 @@ function customerCardHtml(g,c){
         <div class="ccard-avatar" style="background:${avBg[ci]};color:${avTx[ci]}">${initials(c.name)}</div>
         <div class="ccard-info">
           <div class="ccard-name">${esc(c.name)||'(ยังไม่มีชื่อ)'}</div>
-          <div class="ccard-sub">${esc(cLabel)} • ${insts.length} งวด${downAmt?` • ดาวน์ ${downTypeIcon} ฿${fmt(downAmt)}`:''}${c.contract&&c.contract.hasAgent?` • 🤝 ${c.contract.agentPct||0}% (฿${fmt(agentFee(c))})`:''}</div>
+          <div class="ccard-sub">${esc(cLabel)} • ${insts.length} งวด${c.contract&&c.contract.landW&&c.contract.landL?` • 📐 ${c.contract.landW}×${c.contract.landL} ม. (${Math.round(c.contract.landW*c.contract.landL*100)/100} ตร.ม.)`:''}${downAmt?` • ดาวน์ ${downTypeIcon} ฿${fmt(downAmt)}`:''}${c.contract&&c.contract.hasAgent?` • 🤝 ${c.contract.agentPct||0}% (฿${fmt(agentFee(c))})`:''}</div>
         </div>
       </button>
       <div class="ccard-right">
@@ -1362,7 +1408,12 @@ function openContractModal(gid,cid){
   document.getElementById('m_start').value=ct.start||'';
   document.getElementById('m_end').value=ct.end||'';
   document.getElementById('m_value').value=ct.value?fmtInput(String(ct.value)):'';
+  document.getElementById('m_deposit').value=ct.deposit?fmtInput(String(ct.deposit)):'';
   document.getElementById('m_down').value=ct.down?fmtInput(String(ct.down)):'';
+  document.getElementById('m_land_w').value=ct.landW||'';
+  document.getElementById('m_land_l').value=ct.landL||'';
+  document.getElementById('m_land_price').value=ct.landPricePerSqm?fmtInput(String(ct.landPricePerSqm)):'';
+  calcContractLand();
   document.getElementById('m_contact').value=ct.contact||'';
   document.getElementById('m_terms').value=ct.terms||'';
   // down type radio
@@ -1388,10 +1439,56 @@ function openContractModal(gid,cid){
   document.getElementById('m_agent_yes').checked=hasAgent;
   document.getElementById('m_agent_name').value=ct.agentName||'';
   document.getElementById('m_agent_pct').value=ct.agentPct||'';
-  document.getElementById('m_agent_amount').value=ct.agentAmount||'';
+  document.getElementById('m_agent_amount').value=ct.agentAmount?fmtInput(String(ct.agentAmount)):'';
+  document.getElementById('m_agent_is_kip').checked=!!ct.agentIsKip;
+  document.getElementById('agentKipGroup').style.display=ct.agentIsKip?'block':'none';
+  document.getElementById('m_agent_kip').value=ct.agentKipAmount?fmtInput(String(ct.agentKipAmount)):'';
+  document.getElementById('m_agent_kip_rate').value=ct.agentKipRate||690;
+  if(ct.agentIsKip)calcAgentKip();
   document.getElementById('agentFieldsGroup').style.display=hasAgent?'block':'none';
   updateAgentPreview();
   document.getElementById('contractModal').classList.remove('hidden');
+}
+function calcContractLand(){
+  const w=parseFloat(document.getElementById('m_land_w').value)||0;
+  const l=parseFloat(document.getElementById('m_land_l').value)||0;
+  const price=parseMoney(document.getElementById('m_land_price').value);
+  const sqm=Math.round(w*l*100)/100;
+  const cost=Math.round(sqm*price);
+  const result=document.getElementById('m_land_result');
+  if(sqm>0){
+    result.innerHTML=`<span style="color:var(--text-primary);font-weight:600">${sqm.toLocaleString('th-TH',{maximumFractionDigits:2})} ตร.ม.</span>${cost>0?`
+      <br><span style="color:#0284c7;font-weight:700">฿${fmt(cost)}</span>
+      <button type="button" onclick="useLandPrice(${cost})" style="margin-left:8px;font-size:11px;padding:2px 10px;border-radius:6px;background:#0284c7;color:#fff;border:none;cursor:pointer">ใช้ราคานี้ →</button>`:''}`; 
+  } else {
+    result.textContent='กรอกขนาดที่ดินเพื่อคำนวณ';
+  }
+}
+function useLandPrice(cost){
+  document.getElementById('m_value').value=fmtInput(String(cost));
+  onContractValueInput();
+  // highlight ช่องมูลค่าสัญญาเพื่อให้รู้ว่ามีการเปลี่ยน
+  const el=document.getElementById('m_value');
+  el.style.borderColor='#0284c7';
+  setTimeout(()=>{el.style.borderColor='';},1500);
+}
+function toggleAgentKip(){
+  const isKip=document.getElementById('m_agent_is_kip').checked;
+  document.getElementById('agentKipGroup').style.display=isKip?'block':'none';
+  if(isKip)calcAgentKip();
+}
+function calcAgentKip(){
+  const kip=parseMoney(document.getElementById('m_agent_kip').value);
+  const rate=parseFloat(document.getElementById('m_agent_kip_rate').value)||690;
+  const baht=kip>0?Math.round(kip/rate):0;
+  const preview=document.getElementById('agentKipPreview');
+  if(kip>0){
+    preview.textContent=`₭${fmt(kip)} ÷ ${rate} = ฿${fmt(baht)}`;
+    document.getElementById('m_agent_amount').value=fmtInput(String(baht));
+    onAgentAmountInput();
+  } else {
+    preview.textContent='';
+  }
 }
 function toggleAgentFields(){
   const yes=document.getElementById('m_agent_yes').checked;
@@ -1456,7 +1553,14 @@ function saveContract(){
     hasAgent:document.getElementById('m_agent_yes').checked,
     agentName:document.getElementById('m_agent_name').value.trim(),
     agentPct:parseFloat(document.getElementById('m_agent_pct').value)||0,
-    agentAmount:parseMoney(document.getElementById('m_agent_amount').value)
+    agentAmount:parseMoney(document.getElementById('m_agent_amount').value),
+    agentIsKip:document.getElementById('m_agent_is_kip').checked,
+    agentKipAmount:parseMoney(document.getElementById('m_agent_kip').value),
+    agentKipRate:parseFloat(document.getElementById('m_agent_kip_rate').value)||690,
+    deposit:parseMoney(document.getElementById('m_deposit').value),
+    landW:parseFloat(document.getElementById('m_land_w').value)||0,
+    landL:parseFloat(document.getElementById('m_land_l').value)||0,
+    landPricePerSqm:parseMoney(document.getElementById('m_land_price').value)
   });
   save();closeContractModal();render();
 }
