@@ -1020,7 +1020,7 @@ function groupHtml(g,q){
       </div>
     </div>
     <div class="group-body ${forceOpen?'':'collapsed'}" id="gbody-${g.id}">
-      ${custFiltered.length?miniDash:''}
+      ${miniDash}
       ${expSection}
       ${custFiltered.length?custFiltered.map(c=>customerCardHtml(g,c)).join(''):'<div style="text-align:center;padding:1.5rem;color:#9ca3af;font-size:13px">ยังไม่มีลูกค้า — กด ＋ เพื่อเพิ่ม</div>'}
     </div>
@@ -1175,7 +1175,7 @@ function calcLand(){
   const w=parseFloat(document.getElementById('land_w').value)||0;
   const l=parseFloat(document.getElementById('land_l').value)||0;
   const price=parseMoney(document.getElementById('land_price').value);
-  const sqm=w*l;const cost=sqm*price;
+  const sqm=w*l;const cost=Math.round(sqm*price);
   if(sqm>0&&price>0)document.getElementById('land_cost_input').value=fmtInput(String(cost));
   _updateLandDisplay(sqm,cost||parseMoney(document.getElementById('land_cost_input').value));
 }
@@ -1186,7 +1186,7 @@ function onLandSizeInput(){
   const price=parseMoney(document.getElementById('land_price').value);
   const sqm=w*l;
   if(price>0){
-    const cost=sqm*price;
+    const cost=Math.round(sqm*price);
     document.getElementById('land_cost_input').value=fmtInput(String(cost));
     _updateLandDisplay(sqm,cost);
   } else {
@@ -1201,7 +1201,7 @@ function onLandPriceInput(){
   const price=parseMoney(document.getElementById('land_price').value);
   const sqm=w*l;
   if(sqm>0){
-    const cost=sqm*price;
+    const cost=Math.round(sqm*price);
     document.getElementById('land_cost_input').value=fmtInput(String(cost));
     _updateLandDisplay(sqm,cost);
   } else {
@@ -1225,7 +1225,7 @@ function saveLand(){
   const l=parseFloat(document.getElementById('land_l').value)||0;
   const price=parseMoney(document.getElementById('land_price').value);
   const cost=parseMoney(document.getElementById('land_cost_input').value);
-  g.land={w,l,pricePerSqm:price,sqm:w*l,cost,note:document.getElementById('land_note').value.trim()};
+  g.land={w,l,pricePerSqm:price,sqm:Math.round(w*l*100)/100,cost:Math.round(cost),note:document.getElementById('land_note').value.trim()};
   save();closeLandModal();render();
 }
 function landSqm(g){return g.land&&g.land.sqm?g.land.sqm:0}
