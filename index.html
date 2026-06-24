@@ -332,6 +332,19 @@ header span{font-size:12px;color:#8fafc8}
           <input class="form-input" type="text" inputmode="decimal" id="m_down" placeholder="0" onfocus="onMoneyFocus(this)" onblur="onMoneyBlur(this)" oninput="onMoneyInput(this)">
         </div>
       </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;user-select:none">
+          <input type="checkbox" id="m_down_pending" style="width:15px;height:15px;accent-color:#f59e0b" onchange="toggleDownPending()">
+          <span>⏳ ยังไม่ได้จ่ายเงินดาวน์</span>
+        </label>
+      </div>
+      <div id="downPendingGroup" style="display:none;background:var(--bg-secondary);border-radius:8px;padding:10px 12px;margin-bottom:10px;border-left:3px solid #f59e0b">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">📅 กำหนดชำระเงินดาวน์</label>
+          <input class="form-input" type="date" id="m_down_due_date" style="margin-top:4px">
+          <div style="font-size:11px;color:#f59e0b;margin-top:4px">⚠ ระบบจะเพิ่มงวดดาวน์ในตารางชำระอัตโนมัติ และแจ้งเตือนเมื่อถึงกำหนด</div>
+        </div>
+      </div>
       </div>
       <div class="form-group">
         <label class="form-label">ประเภทการชำระเงินดาวน์</label>
@@ -558,7 +571,7 @@ function setLocalCollapsed(gid,val){
   map[gid]=val;
   try{localStorage.setItem(COLLAPSE_KEY,JSON.stringify(map));}catch(e){}
 }
-function mkC(o){return Object.assign({no:'',project:'',start:'',end:'',value:0,deposit:0,down:0,downType:'transfer',downSlip:null,contact:'',terms:'',hasAgent:false,agentName:'',agentPct:0,agentAmount:0,agentIsKip:false,agentKipAmount:0,agentKipRate:690,landW:0,landL:0,landPricePerSqm:0},o||{})}
+function mkC(o){return Object.assign({no:'',project:'',start:'',end:'',value:0,deposit:0,down:0,downType:'transfer',downSlip:null,downPending:false,downDueDate:'',contact:'',terms:'',hasAgent:false,agentName:'',agentPct:0,agentAmount:0,agentIsKip:false,agentKipAmount:0,agentKipRate:690,agentCalcType:'pct',agentSqmPrice:0,agentSqm:0,landW:0,landL:0,landPricePerSqm:0},o||{})}
 function mkInst(no,date,amount){return{id:'i'+Date.now()+Math.floor(Math.random()*9999),no,date:date||'',amount:amount||0,status:'pending',slip:null,cash:false}}
 function mkCustomer(id){return{id,name:'',contract:mkC(),note:'',installments:[]}}
 function mkGroup(id){return{id,name:'โครงการใหม่',colorIdx:id%8,collapsed:false,customers:[],expenses:[],land:{w:0,l:0,pricePerSqm:0,note:''}}}
@@ -715,6 +728,10 @@ function totalDue(c){return(c.installments||[]).reduce((a,i)=>a+(i.amount||0),0)
 function totalContractValue(c){return c.contract&&c.contract.value?c.contract.value:0}
 function agentFee(c){
   if(!c.contract||!c.contract.hasAgent)return 0;
+  // ถ้าเป็นกีบ ให้คำนวณจาก kipAmount ÷ kipRate เสมอ ไม่ใช้ agentAmount ที่อาจผิด
+  if(c.contract.agentIsKip&&c.contract.agentKipAmount&&c.contract.agentKipRate){
+    return Math.round(c.contract.agentKipAmount/c.contract.agentKipRate);
+  }
   return c.contract.agentAmount||0;
 }
 function totalPaid(c){return(c.installments||[]).filter(i=>i.status==='paid').reduce((a,i)=>a+(i.amount||0),0)}
@@ -892,16 +909,32 @@ function renderAlerts(){
       if(type==='overdue'){
         // แสดงแบบรวมต่อคน — นับจำนวนงวดค้าง
         Object.values(grp.custMap).forEach(({c,installments:ov})=>{
-          const count=ov.length;
-          const total=ov.reduce((a,i)=>a+i.amount,0);
-          const earliest=ov.reduce((a,i)=>a.date<i.date?a:i);
-          html+=`<div class="alert-row">
-            <div style="flex:1">
-              <div class="alert-row-name">${esc(c.name)}</div>
-              <div class="alert-row-sub">ค้าง ${count} งวด • เริ่มตั้งแต่ ${fmtDate(earliest.date)} • รวม ฿${fmt(total)}</div>
-            </div>
-            <span class="alert-row-badge badge-overdue-red">เกิน ${count} งวด</span>
-          </div>`;
+          const downOv=ov.filter(i=>i.isDown);
+          const instOv=ov.filter(i=>!i.isDown);
+          // งวดปกติค้าง
+          if(instOv.length){
+            const count=instOv.length;
+            const total=instOv.reduce((a,i)=>a+i.amount,0);
+            const earliest=instOv.reduce((a,i)=>a.date<i.date?a:i);
+            html+=`<div class="alert-row">
+              <div style="flex:1">
+                <div class="alert-row-name">${esc(c.name)}</div>
+                <div class="alert-row-sub">ค้าง ${count} งวด • เริ่มตั้งแต่ ${fmtDate(earliest.date)} • รวม ฿${fmt(total)}</div>
+              </div>
+              <span class="alert-row-badge badge-overdue-red">เกิน ${count} งวด</span>
+            </div>`;
+          }
+          // ดาวน์ค้าง — สีส้ม แยกออกมา
+          if(downOv.length){
+            const total=downOv.reduce((a,i)=>a+i.amount,0);
+            html+=`<div class="alert-row" style="background:rgba(245,158,11,0.08);border-left:3px solid #f59e0b;border-radius:6px;padding:6px 10px;margin:4px 0">
+              <div style="flex:1">
+                <div class="alert-row-name">💰 ${esc(c.name)} — เงินดาวน์</div>
+                <div class="alert-row-sub">กำหนดชำระ ${fmtDate(downOv[0].date)} • ฿${fmt(total)}</div>
+              </div>
+              <span class="alert-row-badge" style="background:#f59e0b;color:#fff">ดาวน์ค้าง</span>
+            </div>`;
+          }
         });
       } else {
         grp.items.forEach(({c,i,diff})=>{
@@ -1131,14 +1164,18 @@ function customerCardHtml(g,c){
   const downTypeIcon=c.contract&&c.contract.downType==='cash'?'💵':'💳';
 
   const instRows=insts.map(i=>`
-    <tr>
-      <td style="text-align:center;width:55px"><span class="inst-no">งวด ${i.no}</span></td>
+    <tr style="${i.isDown?'background:rgba(245,158,11,0.08);':''}" >
+      <td style="text-align:center;width:55px">
+        ${i.isDown
+          ?`<span style="font-size:10px;font-weight:700;color:#f59e0b;white-space:nowrap">💰 ดาวน์</span>`
+          :`<span class="inst-no">งวด ${i.no}</span>`}
+      </td>
       <td style="width:125px"><input class="e-input date-input" type="date" value="${esc(i.date)}" onchange="updInst('${i.id}','date',this.value)"></td>
       <td style="width:100px;text-align:right"><input class="e-input right" value="${fmt(i.amount)}" onblur="updInstMoney('${i.id}',this.value,this)" style="min-width:75px"></td>
       <td style="width:40px;text-align:center">
         <button class="toggle-btn is-${i.status}" onclick="cycleStatus('${i.id}')" title="${i.status==='paid'?'ชำระแล้ว':i.status==='overdue'?'เกินกำหนด':'รอชำระ'}">${toggleIcon(i.status)}</button>
       </td>
-      <td style="width:68px;text-align:center;white-space:nowrap;font-size:10px;color:${i.status==='paid'?'#166534':i.status==='overdue'?'#991b1b':'#6b7280'}">${i.status==='paid'?'ชำระแล้ว':i.status==='overdue'?'เกินกำหนด':'รอชำระ'}</td>
+      <td style="width:68px;text-align:center;white-space:nowrap;font-size:10px;color:${i.isDown&&i.status!=='paid'?'#f59e0b':i.status==='paid'?'#166534':i.status==='overdue'?'#991b1b':'#6b7280'}">${i.status==='paid'?'ชำระแล้ว':i.isDown?'⏳ รอดาวน์':i.status==='overdue'?'เกินกำหนด':'รอชำระ'}</td>
       <td style="width:80px;text-align:center">
         <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;color:${i.cash?'#166534':'var(--text-secondary)'}">
           <input type="checkbox" ${i.cash?'checked':''} onchange="updInst('${i.id}','cash',this.checked)" style="width:15px;height:15px;cursor:pointer;accent-color:#16a34a">
@@ -1453,6 +1490,9 @@ function openContractModal(gid,cid){
   document.getElementById('m_value').value=ct.value?fmtInput(String(ct.value)):'';
   document.getElementById('m_deposit').value=ct.deposit?fmtInput(String(ct.deposit)):'';
   document.getElementById('m_down').value=ct.down?fmtInput(String(ct.down)):'';
+  document.getElementById('m_down_pending').checked=!!ct.downPending;
+  document.getElementById('m_down_due_date').value=ct.downDueDate||'';
+  document.getElementById('downPendingGroup').style.display=ct.downPending?'block':'none';
   document.getElementById('m_land_w').value=ct.landW||'';
   document.getElementById('m_land_l').value=ct.landL||'';
   document.getElementById('m_land_price').value=ct.landPricePerSqm?fmtInput(String(ct.landPricePerSqm)):'';
@@ -1482,7 +1522,12 @@ function openContractModal(gid,cid){
   document.getElementById('m_agent_yes').checked=hasAgent;
   document.getElementById('m_agent_name').value=ct.agentName||'';
   document.getElementById('m_agent_pct').value=ct.agentPct||'';
-  document.getElementById('m_agent_amount').value=ct.agentAmount?fmtInput(String(ct.agentAmount)):'';
+  // ถ้าเป็นกีบ → คำนวณยอดบาทจาก kip÷rate ใหม่ ไม่ใช้ agentAmount ที่อาจเก่า
+  const isKip=!!ct.agentIsKip;
+  const agentBaht=isKip&&ct.agentKipAmount&&ct.agentKipRate
+    ? Math.round(ct.agentKipAmount/ct.agentKipRate)
+    : (ct.agentAmount||0);
+  document.getElementById('m_agent_amount').value=agentBaht?fmtInput(String(agentBaht)):'';
   // calc type
   const bySqm=ct.agentCalcType==='sqm';
   document.getElementById('m_agent_by_pct').checked=!bySqm;
@@ -1492,13 +1537,13 @@ function openContractModal(gid,cid){
   document.getElementById('m_agent_sqm_price').value=ct.agentSqmPrice?fmtInput(String(ct.agentSqmPrice)):'';
   document.getElementById('m_agent_sqm').value=ct.agentSqm||'';
   // currency
-  const isKip=!!ct.agentIsKip;
   document.getElementById('m_agent_cur_thb').checked=!isKip;
   document.getElementById('m_agent_cur_kip').checked=isKip;
   document.getElementById('agentKipGroup').style.display=isKip?'block':'none';
   document.getElementById('m_agent_kip').value=ct.agentKipAmount?fmtInput(String(ct.agentKipAmount)):'';
   document.getElementById('m_agent_kip_rate').value=ct.agentKipRate||690;
-  if(bySqm)calcAgentBySqm(); else if(isKip)calcAgentKip();
+  if(bySqm)calcAgentBySqm();
+  // ไม่ call calcAgentKip ตอน load เพราะจะ override m_agent_amount ที่ save ไว้แล้ว
   document.getElementById('agentFieldsGroup').style.display=hasAgent?'block':'none';
   updateAgentPreview();
   document.getElementById('contractModal').classList.remove('hidden');
@@ -1545,16 +1590,18 @@ function calcAgentBySqm(){
   const cost=Math.round(sqm*price);
   const preview=document.getElementById('agentSqmPreview');
   if(sqm>0&&price>0){
-    preview.textContent=`${sqm.toLocaleString('th-TH',{maximumFractionDigits:2})} ตร.ม. × ฿${fmt(price)} = ฿${fmt(cost)}`;
-    document.getElementById('m_agent_amount').value=fmtInput(String(cost));
-    if(document.getElementById('m_agent_cur_kip').checked){
-      const rate=parseFloat(document.getElementById('m_agent_kip_rate').value)||690;
-      document.getElementById('m_agent_kip').value=fmtInput(String(Math.round(cost*rate)));
-      calcAgentKip();
-    }
+    preview.innerHTML=`${sqm.toLocaleString('th-TH',{maximumFractionDigits:2})} ตร.ม. × ฿${fmt(price)} = <strong style="color:#0284c7">฿${fmt(cost)}</strong> <button type="button" onclick="useAgentSqmPrice(${cost})" style="margin-left:6px;font-size:11px;padding:2px 8px;border-radius:6px;background:#0284c7;color:#fff;border:none;cursor:pointer">ใช้ราคานี้ →</button>`;
   } else {
     preview.textContent=sqm>0?'กรอกราคาต่อ ตร.ม. เพื่อคำนวณ':'ระบบจะดึงพื้นที่จากช่องที่ดินด้านบนอัตโนมัติ';
   }
+}
+function useAgentSqmPrice(cost){
+  document.getElementById('m_agent_amount').value=fmtInput(String(cost));
+  onAgentAmountInput();
+  // ไม่ auto-fill กีบ ให้กรอกเอง เพราะอาจสับสน บาท vs กีบ
+  const el=document.getElementById('m_agent_amount');
+  el.style.borderColor='#0284c7';
+  setTimeout(()=>{el.style.borderColor='';},1500);
 }
 function toggleAgentKip(){switchAgentCurrency();}
 function calcAgentKip(){
@@ -1569,6 +1616,10 @@ function calcAgentKip(){
   } else {
     preview.textContent='';
   }
+}
+function toggleDownPending(){
+  const pending=document.getElementById('m_down_pending').checked;
+  document.getElementById('downPendingGroup').style.display=pending?'block':'none';
 }
 function toggleAgentFields(){
   const yes=document.getElementById('m_agent_yes').checked;
@@ -1641,10 +1692,40 @@ function saveContract(){
     agentKipAmount:parseMoney(document.getElementById('m_agent_kip').value),
     agentKipRate:parseFloat(document.getElementById('m_agent_kip_rate').value)||690,
     deposit:parseMoney(document.getElementById('m_deposit').value),
+    downPending:document.getElementById('m_down_pending').checked,
+    downDueDate:document.getElementById('m_down_due_date').value,
     landW:parseFloat(document.getElementById('m_land_w').value)||0,
     landL:parseFloat(document.getElementById('m_land_l').value)||0,
     landPricePerSqm:parseMoney(document.getElementById('m_land_price').value)
   });
+  // ถ้าติ๊กยังไม่จ่ายดาวน์ → เพิ่ม/อัปเดตงวดดาวน์ในตารางงวด
+  const downPending=document.getElementById('m_down_pending').checked;
+  const downDueDate=document.getElementById('m_down_due_date').value;
+  const downAmt=parseMoney(document.getElementById('m_down').value);
+  if(downPending&&downDueDate&&downAmt>0){
+    const g=groups.find(x=>x.id===contractEditKey.gid);
+    const c=g&&g.customers.find(x=>x.id===contractEditKey.cid);
+    if(c){
+      // ลบงวดดาวน์เดิมออกก่อน (ถ้ามี)
+      c.installments=c.installments.filter(i=>!i.isDown);
+      // เพิ่มงวดดาวน์ใหม่
+      c.installments.unshift({
+        id:'down_'+Date.now(),
+        no:0,
+        date:downDueDate,
+        amount:downAmt,
+        status:'pending',
+        slip:null,
+        isDown:true,
+        label:'💰 เงินดาวน์'
+      });
+    }
+  } else {
+    // ถ้าเอาติ๊กออก → ลบงวดดาวน์ออก
+    const g=groups.find(x=>x.id===contractEditKey.gid);
+    const c=g&&g.customers.find(x=>x.id===contractEditKey.cid);
+    if(c) c.installments=c.installments.filter(i=>!i.isDown);
+  }
   save();closeContractModal();render();
 }
 function downSlipClick(){document.getElementById('m_down_slip_input').click();}
