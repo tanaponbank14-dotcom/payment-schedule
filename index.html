@@ -668,13 +668,19 @@ function updExpense(gid,eid,field,val){
   const e=(g.expenses||[]).find(x=>x.id===eid);if(!e)return;
   if(field==='amount'||field==='kipAmount'||field==='kipRate'){
     e[field]=parseMoney(val);
-    // ถ้าแก้ kipAmount หรือ kipRate → คำนวณ amount (บาท) ใหม่
-    if(e.isKip&&(field==='kipAmount'||field==='kipRate')){
-      e.amount=Math.round(e.kipAmount/(e.kipRate||1));
+    // คำนวณ amount (บาท) ใหม่เมื่อแก้ค่ากีบหรือเรท
+    if(e.isKip){
+      const kip=e.kipAmount||0;
+      const rate=e.kipRate||690;
+      if(kip>0&&rate>0) e.amount=Math.round(kip/rate);
     }
   } else if(field==='isKip'){
     e.isKip=!!val;
-    if(e.isKip&&e.kipAmount>0)e.amount=Math.round(e.kipAmount/(e.kipRate||690));
+    if(e.isKip){
+      const kip=e.kipAmount||0;
+      const rate=e.kipRate||690;
+      if(kip>0&&rate>0) e.amount=Math.round(kip/rate);
+    }
   } else {
     e[field]=val;
   }
@@ -959,8 +965,9 @@ function groupHtml(g,q){
           <th style="width:30%">รายการ</th>
           <th style="width:18%;text-align:center">วันที่</th>
           <th style="width:10%;text-align:center">₭ กีบ</th>
-          <th style="width:22%;text-align:right">ยอด</th>
-          <th style="width:12%;text-align:right">บาท</th>
+          <th style="width:28%;text-align:right">ยอด</th>
+          <th style="width:14%;text-align:center">เรทเงิน</th>
+          <th style="width:14%;text-align:right">บาท</th>
           <th style="width:8%"></th>
         </tr></thead>
         <tbody>
@@ -972,13 +979,12 @@ function groupHtml(g,q){
               <input type="checkbox" ${e.isKip?'checked':''} onchange="toggleExpKip(${g.id},'${e.id}',this.checked)" style="width:15px;height:15px;accent-color:#d97706;cursor:pointer">
             </td>
             <td>
-              ${e.isKip?`
-              <div style="display:flex;gap:4px;align-items:center">
-                <input class="exp-input" value="${e.kipAmount?fmtInput(String(e.kipAmount)):''}" placeholder="₭" oninput="onMoneyInput(this)" onblur="onMoneyBlur(this);updExpense(${g.id},'${e.id}','kipAmount',this.value)" style="text-align:right;flex:1;color:#d97706">
-                <span style="font-size:10px;color:var(--text-muted);white-space:nowrap">÷</span>
-                <input class="exp-input" value="${e.kipRate||690}" placeholder="เรท" onblur="updExpense(${g.id},'${e.id}','kipRate',this.value)" style="text-align:right;width:50px;font-size:11px">
-              </div>`
-              :`<input class="exp-input" value="${fmt(e.amount)}" oninput="onMoneyInput(this)" onblur="onMoneyBlur(this);updExpense(${g.id},'${e.id}','amount',this.value)" style="text-align:right">`}
+              ${e.isKip
+                ?`<input class="exp-input money-input" value="${e.kipAmount?fmtInput(String(e.kipAmount)):''}" placeholder="₭" oninput="onMoneyInput(this)" onblur="onMoneyBlur(this);(function(el){const row=el.closest('tr');const rateEl=row&&row.querySelector('.kip-rate-input');if(rateEl)updExpense(${g.id},'${e.id}','kipRate',rateEl.value);updExpense(${g.id},'${e.id}','kipAmount',el.value);})(this)" style="text-align:right;width:100%;color:#d97706">`
+                :`<input class="exp-input money-input" value="${fmt(e.amount)}" oninput="onMoneyInput(this)" onblur="onMoneyBlur(this);updExpense(${g.id},'${e.id}','amount',this.value)" style="text-align:right;width:100%">`}
+            </td>
+            <td style="text-align:center">
+              ${e.isKip?`<input class="exp-input kip-rate-input" value="${e.kipRate||690}" placeholder="เรท" onblur="updExpense(${g.id},'${e.id}','kipRate',this.value)" style="text-align:center;width:100%;font-size:12px">`:'-'}
             </td>
             <td style="text-align:right;font-weight:600;color:${e.isKip?'#d97706':'var(--text-primary)'}">
               ฿${fmt(e.amount)}
@@ -1513,6 +1519,11 @@ function exportCSV(){
 document.getElementById('search').addEventListener('input',()=>render());
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){closeContractModal();closeGenModal();closeSlipModal();}
+});
+
+// Event delegation สำหรับ money format — ครอบคลุมทุก input ที่ render ใหม่
+document.addEventListener('input',e=>{
+  if(e.target.classList.contains('money-input')) onMoneyInput(e.target);
 });
 
 function toggleTheme(){
