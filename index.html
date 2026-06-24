@@ -372,22 +372,64 @@ header span{font-size:12px;color:#8fafc8}
       </div>
       <div id="agentFieldsGroup" style="display:none">
         <div class="form-group"><label class="form-label">ชื่อนายหน้า</label><input class="form-input" id="m_agent_name" placeholder="ชื่อนายหน้า"></div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">เปอร์เซ็นต์ (%)</label>
-            <input class="form-input" type="number" id="m_agent_pct" placeholder="0" step="0.1" min="0" max="100" oninput="onAgentPctInput()">
-          </div>
-          <div class="form-group">
-            <label class="form-label">ยอดค่านายหน้า (บาท)</label>
-            <input class="form-input money-input" type="text" inputmode="decimal" id="m_agent_amount" placeholder="0" oninput="onMoneyInput(this);onAgentAmountInput()" onblur="onMoneyBlur(this)">
+
+        <!-- วิธีคิดค่านายหน้า -->
+        <div class="form-group">
+          <label class="form-label">คิดค่านายหน้าแบบ</label>
+          <div style="display:flex;gap:16px;margin-top:4px">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+              <input type="radio" name="agentCalcType" id="m_agent_by_pct" value="pct" checked onchange="switchAgentCalcType()">
+              <span>% จากมูลค่าสัญญา</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+              <input type="radio" name="agentCalcType" id="m_agent_by_sqm" value="sqm" onchange="switchAgentCalcType()">
+              <span>📐 ราคาต่อ ตร.ม.</span>
+            </label>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;user-select:none">
-            <input type="checkbox" id="m_agent_is_kip" style="width:15px;height:15px;accent-color:#d97706" onchange="toggleAgentKip()">
-            <span>💱 จ่ายเป็นเงินกีบ (₭)</span>
+
+        <!-- แบบ % -->
+        <div id="agentByPctGroup">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">เปอร์เซ็นต์ (%)</label>
+              <input class="form-input" type="number" id="m_agent_pct" placeholder="0" step="0.1" min="0" max="100" oninput="onAgentPctInput()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">ยอดค่านายหน้า (บาท)</label>
+              <input class="form-input money-input" type="text" inputmode="decimal" id="m_agent_amount" placeholder="0" oninput="onMoneyInput(this);onAgentAmountInput()" onblur="onMoneyBlur(this)">
+            </div>
+          </div>
+        </div>
+
+        <!-- แบบ ตร.ม. -->
+        <div id="agentBySqmGroup" style="display:none">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">ราคาต่อ ตร.ม.</label>
+              <input class="form-input money-input" type="text" inputmode="decimal" id="m_agent_sqm_price" placeholder="0" oninput="onMoneyInput(this);calcAgentBySqm()" onblur="onMoneyBlur(this)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">พื้นที่ (ตร.ม.)</label>
+              <input class="form-input" type="number" id="m_agent_sqm" placeholder="อัตโนมัติจากที่ดิน" step="0.01" oninput="calcAgentBySqm()">
+            </div>
+          </div>
+          <div id="agentSqmPreview" style="font-size:12px;color:#0284c7;margin-top:-4px;margin-bottom:8px"></div>
+        </div>
+
+        <!-- สกุลเงิน -->
+        <div style="display:flex;gap:16px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="radio" name="agentCurrency" id="m_agent_cur_thb" value="thb" checked onchange="switchAgentCurrency()">
+            <span>🇹🇭 บาท (฿)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="radio" name="agentCurrency" id="m_agent_cur_kip" value="kip" onchange="switchAgentCurrency()">
+            <span>🇱🇦 กีบ (₭)</span>
           </label>
         </div>
+
+        <!-- กีบ -->
         <div id="agentKipGroup" style="display:none">
           <div class="form-row">
             <div class="form-group">
@@ -401,6 +443,7 @@ header span{font-size:12px;color:#8fafc8}
           </div>
           <div id="agentKipPreview" style="font-size:12px;color:#d97706;margin-top:-4px;margin-bottom:8px"></div>
         </div>
+
         <div id="agentPreview" style="font-size:12px;color:var(--text-secondary);margin-top:-4px"></div>
       </div>
     </div>
@@ -1440,11 +1483,22 @@ function openContractModal(gid,cid){
   document.getElementById('m_agent_name').value=ct.agentName||'';
   document.getElementById('m_agent_pct').value=ct.agentPct||'';
   document.getElementById('m_agent_amount').value=ct.agentAmount?fmtInput(String(ct.agentAmount)):'';
-  document.getElementById('m_agent_is_kip').checked=!!ct.agentIsKip;
-  document.getElementById('agentKipGroup').style.display=ct.agentIsKip?'block':'none';
+  // calc type
+  const bySqm=ct.agentCalcType==='sqm';
+  document.getElementById('m_agent_by_pct').checked=!bySqm;
+  document.getElementById('m_agent_by_sqm').checked=bySqm;
+  document.getElementById('agentByPctGroup').style.display=bySqm?'none':'block';
+  document.getElementById('agentBySqmGroup').style.display=bySqm?'block':'none';
+  document.getElementById('m_agent_sqm_price').value=ct.agentSqmPrice?fmtInput(String(ct.agentSqmPrice)):'';
+  document.getElementById('m_agent_sqm').value=ct.agentSqm||'';
+  // currency
+  const isKip=!!ct.agentIsKip;
+  document.getElementById('m_agent_cur_thb').checked=!isKip;
+  document.getElementById('m_agent_cur_kip').checked=isKip;
+  document.getElementById('agentKipGroup').style.display=isKip?'block':'none';
   document.getElementById('m_agent_kip').value=ct.agentKipAmount?fmtInput(String(ct.agentKipAmount)):'';
   document.getElementById('m_agent_kip_rate').value=ct.agentKipRate||690;
-  if(ct.agentIsKip)calcAgentKip();
+  if(bySqm)calcAgentBySqm(); else if(isKip)calcAgentKip();
   document.getElementById('agentFieldsGroup').style.display=hasAgent?'block':'none';
   updateAgentPreview();
   document.getElementById('contractModal').classList.remove('hidden');
@@ -1472,11 +1526,37 @@ function useLandPrice(cost){
   el.style.borderColor='#0284c7';
   setTimeout(()=>{el.style.borderColor='';},1500);
 }
-function toggleAgentKip(){
-  const isKip=document.getElementById('m_agent_is_kip').checked;
+function switchAgentCalcType(){
+  const bySqm=document.getElementById('m_agent_by_sqm').checked;
+  document.getElementById('agentByPctGroup').style.display=bySqm?'none':'block';
+  document.getElementById('agentBySqmGroup').style.display=bySqm?'block':'none';
+  if(bySqm)calcAgentBySqm(); else updateAgentPreview();
+}
+function switchAgentCurrency(){
+  const isKip=document.getElementById('m_agent_cur_kip').checked;
   document.getElementById('agentKipGroup').style.display=isKip?'block':'none';
   if(isKip)calcAgentKip();
 }
+function calcAgentBySqm(){
+  const price=parseMoney(document.getElementById('m_agent_sqm_price').value);
+  const sqmInput=parseFloat(document.getElementById('m_agent_sqm').value)||0;
+  const sqmFromLand=(parseFloat(document.getElementById('m_land_w').value)||0)*(parseFloat(document.getElementById('m_land_l').value)||0);
+  const sqm=sqmInput||Math.round(sqmFromLand*100)/100;
+  const cost=Math.round(sqm*price);
+  const preview=document.getElementById('agentSqmPreview');
+  if(sqm>0&&price>0){
+    preview.textContent=`${sqm.toLocaleString('th-TH',{maximumFractionDigits:2})} ตร.ม. × ฿${fmt(price)} = ฿${fmt(cost)}`;
+    document.getElementById('m_agent_amount').value=fmtInput(String(cost));
+    if(document.getElementById('m_agent_cur_kip').checked){
+      const rate=parseFloat(document.getElementById('m_agent_kip_rate').value)||690;
+      document.getElementById('m_agent_kip').value=fmtInput(String(Math.round(cost*rate)));
+      calcAgentKip();
+    }
+  } else {
+    preview.textContent=sqm>0?'กรอกราคาต่อ ตร.ม. เพื่อคำนวณ':'ระบบจะดึงพื้นที่จากช่องที่ดินด้านบนอัตโนมัติ';
+  }
+}
+function toggleAgentKip(){switchAgentCurrency();}
 function calcAgentKip(){
   const kip=parseMoney(document.getElementById('m_agent_kip').value);
   const rate=parseFloat(document.getElementById('m_agent_kip_rate').value)||690;
@@ -1554,7 +1634,10 @@ function saveContract(){
     agentName:document.getElementById('m_agent_name').value.trim(),
     agentPct:parseFloat(document.getElementById('m_agent_pct').value)||0,
     agentAmount:parseMoney(document.getElementById('m_agent_amount').value),
-    agentIsKip:document.getElementById('m_agent_is_kip').checked,
+    agentCalcType:document.getElementById('m_agent_by_sqm').checked?'sqm':'pct',
+    agentSqmPrice:parseMoney(document.getElementById('m_agent_sqm_price').value),
+    agentSqm:parseFloat(document.getElementById('m_agent_sqm').value)||0,
+    agentIsKip:document.getElementById('m_agent_cur_kip').checked,
     agentKipAmount:parseMoney(document.getElementById('m_agent_kip').value),
     agentKipRate:parseFloat(document.getElementById('m_agent_kip_rate').value)||690,
     deposit:parseMoney(document.getElementById('m_deposit').value),
