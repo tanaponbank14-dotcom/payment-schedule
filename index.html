@@ -1096,7 +1096,7 @@ function groupHtml(g,q){
         <div class="group-color-bar gc-${g.colorIdx}"></div>
         <div class="group-title-wrap">
           <div class="group-name-display" id="gname-${g.id}" ondblclick="editGroupName(${g.id})" title="ดับเบิลคลิกเพื่อแก้ชื่อ">${esc(g.name)}</div>
-          <div class="group-sub">${custFiltered.length} ลูกค้า • ฿${fmt(tp)} / ฿${fmt(tcv)}${ov?' • <span style="color:#991b1b">⚠ '+ov+' รายเกินกำหนด</span>':''}</div>
+          <div class="group-sub">${custFiltered.length} ลูกค้า • ฿${fmt(tdown+tp)} / ฿${fmt(tcv)}${ov?' • <span style="color:#991b1b">⚠ '+ov+' รายเกินกำหนด</span>':''}</div>
         </div>
       </div>
       <div class="group-header-right">
