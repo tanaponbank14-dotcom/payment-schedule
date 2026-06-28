@@ -12,46 +12,23 @@
 <style>
 :root{
   --font-sans:'Noto Sans Thai',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  --surface-0:#f4f4f1;
-  --surface-1:#ebeae5;
-  --surface-2:#ffffff;
-  --text-primary:#1a1a18;
-  --text-secondary:#5f5e5a;
-  --text-muted:#8a8980;
-  --border:rgba(0,0,0,.1);
-  --border-strong:rgba(0,0,0,.18);
-  --radius:8px;
-  --bg-accent:#e6f1fb;
-  --text-accent:#0c447c;
-  --border-accent:#b5d4f4;
-  --fill-accent:#185fa5;
-  --on-accent:#ffffff;
-  --bg-success:#eaf3de;
-  --text-success:#3b6d11;
-  --border-success:#c0dd97;
+  --surface-0:#f4f4f1;--surface-1:#ebeae5;--surface-2:#ffffff;
+  --text-primary:#1a1a18;--text-secondary:#5f5e5a;--text-muted:#8a8980;
+  --border:rgba(0,0,0,.1);--border-strong:rgba(0,0,0,.18);--radius:8px;
+  --bg-accent:#e6f1fb;--text-accent:#0c447c;--border-accent:#b5d4f4;
+  --fill-accent:#185fa5;--on-accent:#ffffff;
+  --bg-success:#eaf3de;--text-success:#3b6d11;--border-success:#c0dd97;
 }
-@media (prefers-color-scheme: dark){
-  :root{
-    --surface-0:#1c1c1a;
-    --surface-1:#262624;
-    --surface-2:#2f2f2c;
-    --text-primary:#f0efea;
-    --text-secondary:#b4b2a9;
-    --text-muted:#888780;
-    --border:rgba(255,255,255,.12);
-    --border-strong:rgba(255,255,255,.2);
-    --bg-accent:#0c447c;
-    --text-accent:#b5d4f4;
-    --border-accent:#185fa5;
-    --fill-accent:#378add;
-    --on-accent:#042c53;
-    --bg-success:#27500a;
-    --text-success:#c0dd97;
-    --border-success:#3b6d11;
-  }
-}
+@media(prefers-color-scheme:dark){:root{
+  --surface-0:#1c1c1a;--surface-1:#262624;--surface-2:#2f2f2c;
+  --text-primary:#f0efea;--text-secondary:#b4b2a9;--text-muted:#888780;
+  --border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.2);
+  --bg-accent:#0c447c;--text-accent:#b5d4f4;--border-accent:#185fa5;
+  --fill-accent:#378add;--on-accent:#042c53;
+  --bg-success:#27500a;--text-success:#c0dd97;--border-success:#3b6d11;
+}}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font-sans);background:var(--surface-0);color:var(--text-primary);-webkit-font-smoothing:antialiased;padding:0 14px;line-height:1.5}
+body{font-family:var(--font-sans);background:var(--surface-0);color:var(--text-primary);-webkit-font-smoothing:antialiased;padding:0 14px}
 .container{max-width:480px;margin:0 auto;padding:1.25rem 0 2rem}
 .page-title{font-size:20px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px}
 .page-title i{color:var(--text-accent)}
@@ -59,13 +36,31 @@ body{font-family:var(--font-sans);background:var(--surface-0);color:var(--text-p
 .card{background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:.75rem}
 .sec{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.75rem}
 .field{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-bottom:0.5px solid var(--border)}
-.field:last-child{border:none;padding-bottom:0}
-.field:first-of-type{padding-top:0}
+.field:last-child{border:none;padding-bottom:0}.field:first-of-type{padding-top:0}
 .field label{font-size:13px;color:var(--text-secondary)}
 .inp-row{display:flex;align-items:center;gap:8px}
 .inp-row input{flex:1;height:44px;padding:0 12px;background:var(--surface-1);border:0.5px solid var(--border-strong);border-radius:var(--radius);font-size:16px;color:var(--text-primary);outline:none;min-width:0;font-family:var(--font-sans)}
 .inp-row input:focus{border-color:var(--border-accent);box-shadow:0 0 0 2px var(--bg-accent)}
 .inp-row .unit{font-size:13px;color:var(--text-muted);white-space:nowrap;flex-shrink:0}
+.shape-tabs{display:flex;gap:6px;margin-bottom:1rem}
+.shape-tab{flex:1;padding:10px 8px;border:0.5px solid var(--border-strong);border-radius:var(--radius);font-size:13px;color:var(--text-secondary);background:var(--surface-1);cursor:pointer;text-align:center;line-height:1.4}
+.shape-tab.on{background:var(--bg-accent);color:var(--text-accent);border-color:var(--border-accent)}
+
+/* แผนผัง 4 ด้าน */
+.land-diagram{position:relative;margin:0 auto 0;width:220px;height:196px}
+.land-diagram svg{width:100%;height:100%;position:absolute;top:0;left:0}
+.land-diagram input.side-input{position:absolute;width:68px;height:36px;text-align:center;font-size:14px;font-family:var(--font-sans);background:var(--surface-1);border:0.5px solid var(--border-strong);border-radius:var(--radius);color:var(--text-primary);outline:none}
+.land-diagram input.side-input:focus{border-color:var(--border-accent);box-shadow:0 0 0 2px var(--bg-accent)}
+.inp-top{top:0;left:50%;transform:translateX(-50%)}
+.inp-bottom{bottom:0;left:50%;transform:translateX(-50%)}
+.inp-left{left:0;top:50%;transform:translateY(-50%)}
+.inp-right{right:0;top:50%;transform:translateY(-50%)}
+
+/* พื้นที่เรียลไทม์ */
+.area-preview{margin-top:10px;padding:10px 14px;background:var(--bg-accent);border:0.5px solid var(--border-accent);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between}
+.area-preview .ap-lbl{font-size:13px;color:var(--text-accent)}
+.area-preview .ap-val{font-size:18px;font-weight:600;color:var(--text-accent)}
+
 .tabs{display:flex;gap:6px;margin-bottom:.75rem}
 .tab{flex:1;padding:11px 6px;border:0.5px solid var(--border-strong);border-radius:var(--radius);font-size:13px;color:var(--text-secondary);background:var(--surface-1);cursor:pointer;text-align:center}
 .tab.on{background:var(--bg-accent);color:var(--text-accent);border-color:var(--border-accent)}
@@ -75,12 +70,9 @@ body{font-family:var(--font-sans);background:var(--surface-0);color:var(--text-p
 .calc-btn{width:100%;height:52px;background:var(--fill-accent);color:var(--on-accent);border:none;border-radius:12px;font-size:17px;font-weight:600;cursor:pointer;margin-bottom:.75rem;font-family:var(--font-sans)}
 .calc-btn:active{opacity:.85}
 .save-btn{width:100%;height:48px;background:var(--surface-2);color:var(--text-primary);border:0.5px solid var(--border-strong);border-radius:12px;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:.75rem;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px}
-.save-btn:active{opacity:.7}
-.save-btn i{font-size:18px}
-.result-wrap{margin-bottom:.75rem;background:var(--surface-0);padding:2px}
+.save-btn:active{opacity:.7}.save-btn i{font-size:18px}
 .hero{background:var(--bg-accent);border:0.5px solid var(--border-accent);border-radius:16px;padding:20px 18px 18px;margin-bottom:10px}
 .hero-eyebrow{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text-accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;opacity:.85}
-.hero-eyebrow i{font-size:14px}
 .hero-price{font-size:36px;font-weight:600;color:var(--text-accent);line-height:1.1}
 .hero-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .hero-chip{background:var(--border-accent);color:var(--text-accent);font-size:12px;padding:4px 10px;border-radius:20px}
@@ -90,13 +82,12 @@ body{font-family:var(--font-sans);background:var(--surface-0);color:var(--text-p
 .info-tile .t-icon{font-size:18px;color:var(--text-muted);margin-bottom:6px}
 .info-tile .t-lbl{font-size:11px;color:var(--text-muted);margin-bottom:3px}
 .info-tile .t-val{font-size:15px;font-weight:600;color:var(--text-primary)}
-.info-tile .t-sub{font-size:11px;color:var(--text-muted);margin-top:3px;line-height:1.4}
-.pay-row{background:var(--surface-2);border:0.5px solid var(--border);border-radius:10px;padding:14px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.info-tile .t-sub{font-size:11px;color:var(--text-muted);margin-top:3px;line-height:1.5}
+.pay-row{background:var(--surface-2);border:0.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
 .pay-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
 .pay-icon.blue{background:var(--bg-accent);color:var(--text-accent)}
 .pay-icon.green{background:var(--bg-success);color:var(--text-success)}
-.pay-body{flex:1;min-width:0}
-.pay-lbl{font-size:13px;color:var(--text-secondary)}
+.pay-body{flex:1;min-width:0}.pay-lbl{font-size:13px;color:var(--text-secondary)}
 .pay-sub{font-size:11px;color:var(--text-muted);margin-top:1px}
 .pay-val{font-size:17px;font-weight:600;color:var(--text-primary);text-align:right;flex-shrink:0}
 .monthly-hero{background:var(--bg-success);border:0.5px solid var(--border-success);border-radius:12px;padding:16px;margin-bottom:8px}
@@ -116,21 +107,59 @@ body{font-family:var(--font-sans);background:var(--surface-0);color:var(--text-p
 </head>
 <body>
 <div class="container">
-
 <div class="page-title"><i class="ti ti-building-estate"></i>คำนวณราคาที่ดิน</div>
-<div class="page-sub">กว้าง × ยาว • เงินดาวน์ • ผ่อนรายเดือน</div>
+<div class="page-sub">เลือกรูปแบบที่ดิน • เงินดาวน์ • ผ่อนรายเดือน</div>
 
 <div class="card">
-  <div class="sec">ขนาด และราคา</div>
-  <div class="field">
-    <label>กว้าง</label>
-    <div class="inp-row"><input type="text" inputmode="decimal" id="w" placeholder="0"><span class="unit">เมตร</span></div>
+  <div class="sec">รูปร่างที่ดิน</div>
+  <div class="shape-tabs">
+    <div class="shape-tab on" onclick="setShape('rect')" id="stab-rect">⬛ สี่เหลี่ยม<br>ด้านเท่า</div>
+    <div class="shape-tab" onclick="setShape('quad')" id="stab-quad">🔷 4 ด้าน<br>ไม่เท่ากัน</div>
   </div>
-  <div class="field">
-    <label>ยาว</label>
-    <div class="inp-row"><input type="text" inputmode="decimal" id="l" placeholder="0"><span class="unit">เมตร</span></div>
+
+  <!-- สี่เหลี่ยมผืนผ้า -->
+  <div id="shape-rect">
+    <div class="field">
+      <label>กว้าง</label>
+      <div class="inp-row"><input type="text" inputmode="decimal" id="w" placeholder="0"><span class="unit">เมตร</span></div>
+    </div>
+    <div class="field">
+      <label>ยาว</label>
+      <div class="inp-row"><input type="text" inputmode="decimal" id="l" placeholder="0"><span class="unit">เมตร</span></div>
+    </div>
   </div>
-  <div class="field">
+
+  <!-- 4 ด้านไม่เท่ากัน -->
+  <div id="shape-quad" style="display:none">
+    <div class="land-diagram">
+      <svg viewBox="0 0 220 196" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="42,46 178,46 188,150 32,150" fill="var(--bg-accent)" stroke="var(--border-accent)" stroke-width="2" stroke-linejoin="round"/>
+        <line x1="42" y1="38" x2="178" y2="38" stroke="var(--text-accent)" stroke-width="1.5"/>
+        <polygon points="42,38 48,34 48,42" fill="var(--text-accent)"/>
+        <polygon points="178,38 172,34 172,42" fill="var(--text-accent)"/>
+        <line x1="32" y1="158" x2="188" y2="158" stroke="var(--text-accent)" stroke-width="1.5"/>
+        <polygon points="32,158 38,154 38,162" fill="var(--text-accent)"/>
+        <polygon points="188,158 182,154 182,162" fill="var(--text-accent)"/>
+        <line x1="24" y1="46" x2="24" y2="150" stroke="var(--text-accent)" stroke-width="1.5"/>
+        <polygon points="24,46 20,52 28,52" fill="var(--text-accent)"/>
+        <polygon points="24,150 20,144 28,144" fill="var(--text-accent)"/>
+        <line x1="196" y1="46" x2="196" y2="150" stroke="var(--text-accent)" stroke-width="1.5"/>
+        <polygon points="196,46 192,52 200,52" fill="var(--text-accent)"/>
+        <polygon points="196,150 192,144 200,144" fill="var(--text-accent)"/>
+      </svg>
+      <input class="side-input inp-top"    type="text" inputmode="decimal" id="s-top"    placeholder="หน้า" oninput="liveArea()">
+      <input class="side-input inp-bottom" type="text" inputmode="decimal" id="s-bottom" placeholder="หลัง" oninput="liveArea()">
+      <input class="side-input inp-left"   type="text" inputmode="decimal" id="s-left"   placeholder="ซ้าย" oninput="liveArea()">
+      <input class="side-input inp-right"  type="text" inputmode="decimal" id="s-right"  placeholder="ขวา"  oninput="liveArea()">
+    </div>
+    <!-- พื้นที่เรียลไทม์ -->
+    <div class="area-preview" id="area-preview" style="display:none">
+      <span class="ap-lbl">พื้นที่ประมาณ</span>
+      <span class="ap-val" id="area-preview-val">– ตร.ม.</span>
+    </div>
+  </div>
+
+  <div class="field" style="margin-top:10px">
     <label>ราคา / ตร.ม.</label>
     <div class="inp-row"><input type="text" inputmode="numeric" id="price" placeholder="0"><span class="unit">บาท</span></div>
   </div>
@@ -187,12 +216,13 @@ body{font-family:var(--font-sans);background:var(--surface-0);color:var(--text-p
 <button class="calc-btn" onclick="calc()">คำนวณ</button>
 
 <div id="save-wrap" style="display:none">
-  <button class="save-btn" onclick="saveImg()" id="save-btn"><i class="ti ti-camera"></i><span id="save-label">บันทึกเป็นรูป</span></button>
+  <button class="save-btn" onclick="saveImg()" id="save-btn">
+    <i class="ti ti-camera"></i><span id="save-label">บันทึกเป็นรูป</span>
+  </button>
 </div>
 
 <div id="results" style="display:none">
-<div class="result-wrap" id="capture">
-
+<div id="capture" style="padding:2px">
   <div class="hero">
     <div class="hero-eyebrow"><i class="ti ti-building-estate"></i>ราคาที่ดินทั้งหมด</div>
     <div class="hero-price" id="o-total">–</div>
@@ -201,7 +231,6 @@ body{font-family:var(--font-sans);background:var(--surface-0);color:var(--text-p
       <span class="hero-chip" id="o-ppm-chip">–</span>
     </div>
   </div>
-
   <div class="section-label">รายละเอียดที่ดิน</div>
   <div class="info-grid">
     <div class="info-tile">
@@ -216,7 +245,6 @@ body{font-family:var(--font-sans);background:var(--surface-0);color:var(--text-p
       <div class="t-val" id="o-ppm">–</div>
     </div>
   </div>
-
   <div class="section-label">การชำระเงิน</div>
   <div class="pay-row">
     <div class="pay-icon blue"><i class="ti ti-wallet"></i></div>
@@ -234,7 +262,6 @@ body{font-family:var(--font-sans);background:var(--surface-0);color:var(--text-p
     </div>
     <div class="pay-val" id="o-loan">–</div>
   </div>
-
   <div id="monthly-section" style="display:none">
     <div class="section-label">ค่างวดรายเดือน</div>
     <div class="monthly-hero">
@@ -259,16 +286,22 @@ body{font-family:var(--font-sans);background:var(--surface-0);color:var(--text-p
       </div>
     </div>
   </div>
-
   <div class="cap-foot" id="cap-foot">คำนวณโดยเครื่องคำนวณที่ดิน</div>
-
 </div>
 </div>
-
 </div>
 
 <script>
-let downMode='pct', curMode='thb';
+let downMode='pct', curMode='thb', shapeMode='rect';
+
+function setShape(s){
+  shapeMode=s;
+  ['rect','quad'].forEach(k=>{
+    document.getElementById('shape-'+k).style.display=k===s?'':'none';
+    document.getElementById('stab-'+k).className='shape-tab'+(k===s?' on':'');
+  });
+  if(s==='quad') liveArea();
+}
 function setDown(d){
   downMode=d;
   ['pct','amt'].forEach(k=>{
@@ -285,43 +318,70 @@ function setCur(c){
 }
 function raw(id){return parseFloat((document.getElementById(id)||{value:''}).value.replace(/,/g,'').trim())||0;}
 function bindComma(id){
-  const el=document.getElementById(id);
-  if(!el)return;
+  const el=document.getElementById(id);if(!el)return;
   el.addEventListener('input',function(){
-    const p=this.selectionStart, ol=this.value.length;
+    const p=this.selectionStart,ol=this.value.length;
     let v=this.value.replace(/[^0-9.]/g,'');
-    const pts=v.split('.');
-    if(pts.length>2) v=pts[0]+'.'+pts.slice(1).join('');
-    const p2=v.split('.');
-    p2[0]=p2[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
+    const pts=v.split('.');if(pts.length>2)v=pts[0]+'.'+pts.slice(1).join('');
+    const p2=v.split('.');p2[0]=p2[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
     this.value=p2.join('.');
-    const nl=this.value.length;
-    this.setSelectionRange(p+(nl-ol),p+(nl-ol));
+    const nl=this.value.length;this.setSelectionRange(p+(nl-ol),p+(nl-ol));
   });
 }
-['w','l','price','dpct','damt','r-usd','r-lak','irate','months'].forEach(bindComma);
+['w','l','s-top','s-bottom','s-left','s-right','price','dpct','damt','r-usd','r-lak','irate','months'].forEach(bindComma);
+
 function nf(v){
-  if(Number.isInteger(v)) return v.toLocaleString('th-TH');
+  if(Number.isInteger(v))return v.toLocaleString('th-TH');
   const r=parseFloat(v.toFixed(2));
   return r.toLocaleString('th-TH',{minimumFractionDigits:0,maximumFractionDigits:2});
 }
 function fmtB(v){
-  if(v>=1e9) return nf(v/1e9)+' พันล้านบาท';
-  if(v>=1e6) return nf(parseFloat((v/1e6).toFixed(2)))+' ล้านบาท';
+  if(v>=1e9)return nf(v/1e9)+' พันล้านบาท';
+  if(v>=1e6)return nf(parseFloat((v/1e6).toFixed(2)))+' ล้านบาท';
   return nf(Math.round(v))+' บาท';
 }
 function toThb(v){
-  if(curMode==='thb') return v;
-  if(curMode==='usd') return v*(raw('r-usd')||35);
-  if(curMode==='lak') return v/(raw('r-lak')||540);
+  if(curMode==='thb')return v;
+  if(curMode==='usd')return v*(raw('r-usd')||35);
+  if(curMode==='lak')return v/(raw('r-lak')||540);
   return v;
 }
+
+// เรียลไทม์ — แสดงพื้นที่ทันทีที่กรอกครบ
+function liveArea(){
+  const top=raw('s-top'),bottom=raw('s-bottom'),left=raw('s-left'),right=raw('s-right');
+  const preview=document.getElementById('area-preview');
+  const previewVal=document.getElementById('area-preview-val');
+  if(top>0&&bottom>0&&left>0&&right>0){
+    const sqm=((top+bottom)/2)*((left+right)/2);
+    previewVal.textContent=nf(parseFloat(sqm.toFixed(2)))+' ตร.ม.';
+    preview.style.display='flex';
+  } else {
+    preview.style.display='none';
+  }
+}
+
 function calc(){
-  const w=raw('w'),l=raw('l'),sqm=w*l,pp=raw('price'),total=sqm*pp;
-  if(sqm<=0||pp<=0){alert('กรุณากรอก กว้าง ยาว และราคา/ตร.ม. ให้ครบก่อนนะครับ');return;}
+  let sqm=0, dimText='';
+  const pp=raw('price');
+
+  if(shapeMode==='rect'){
+    const w=raw('w'),l=raw('l');
+    sqm=w*l;
+    dimText='กว้าง '+nf(w)+' ม. × ยาว '+nf(l)+' ม.';
+    if(sqm<=0||pp<=0){alert('กรุณากรอก กว้าง ยาว และราคา/ตร.ม. ให้ครบก่อนนะครับ');return;}
+  } else {
+    const top=raw('s-top'),bottom=raw('s-bottom'),left=raw('s-left'),right=raw('s-right');
+    sqm=((top+bottom)/2)*((left+right)/2);
+    dimText='หน้า '+nf(top)+' | หลัง '+nf(bottom)+' | ซ้าย '+nf(left)+' | ขวา '+nf(right)+' ม.';
+    if(sqm<=0||pp<=0){alert('กรุณากรอกขนาดทั้ง 4 ด้าน และราคา/ตร.ม. ให้ครบก่อนนะครับ');return;}
+  }
+
+  const total=sqm*pp;
   let down=0,loan=0,dpct=0;
   if(downMode==='pct'){dpct=raw('dpct');down=total*dpct/100;loan=total-down;}
   else{down=toThb(raw('damt'));loan=Math.max(0,total-down);dpct=total>0?down/total*100:0;}
+
   const irate=raw('irate'),months=raw('months')||120;
   let monthly=0,totalPay=0;
   const hasM=loan>0&&months>0;
@@ -329,16 +389,18 @@ function calc(){
     monthly=irate===0?loan/months:loan*(irate/100/12)*Math.pow(1+irate/100/12,months)/(Math.pow(1+irate/100/12,months)-1);
     totalPay=monthly*months;
   }
-  const sqmC=Number.isInteger(sqm)?sqm:parseFloat(sqm.toFixed(2));
+
+  const sqmC=parseFloat(sqm.toFixed(2));
   document.getElementById('o-total').textContent=fmtB(total);
   document.getElementById('o-sqm-chip').textContent=nf(sqmC)+' ตร.ม.';
   document.getElementById('o-ppm-chip').textContent=nf(pp)+' บาท/ตร.ม.';
   document.getElementById('o-sqm').textContent=nf(sqmC)+' ตร.ม.';
-  document.getElementById('o-dim').textContent='กว้าง '+nf(w)+' ม. × ยาว '+nf(l)+' ม.';
+  document.getElementById('o-dim').textContent=dimText;
   document.getElementById('o-ppm').textContent=nf(pp)+' บาท';
   document.getElementById('o-down').textContent=fmtB(down);
   document.getElementById('o-dpct-sub').textContent=parseFloat(dpct.toFixed(1))+'% ของราคาทั้งหมด';
   document.getElementById('o-loan').textContent=fmtB(loan);
+
   const ms=document.getElementById('monthly-section');
   if(hasM){
     ms.style.display='';
@@ -350,43 +412,32 @@ function calc(){
     if(irate>0){ir.style.display='';document.getElementById('o-int').textContent=fmtB(totalPay-loan);}else ir.style.display='none';
     document.getElementById('o-all').textContent=fmtB(down+totalPay);
   }else ms.style.display='none';
+
   document.getElementById('results').style.display='';
   document.getElementById('save-wrap').style.display='';
   document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
 }
+
 function saveImg(){
-  const btn=document.getElementById('save-btn');
-  const label=document.getElementById('save-label');
-  const cap=document.getElementById('capture');
-  const foot=document.getElementById('cap-foot');
+  const btn=document.getElementById('save-btn'),label=document.getElementById('save-label');
+  const cap=document.getElementById('capture'),foot=document.getElementById('cap-foot');
   if(typeof html2canvas==='undefined'){alert('ระบบยังโหลดไม่เสร็จ ลองอีกครั้งนะครับ');return;}
-  label.textContent='กำลังบันทึก...';
-  btn.style.pointerEvents='none';
-  foot.style.display='block';
+  label.textContent='กำลังบันทึก...';btn.style.pointerEvents='none';foot.style.display='block';
   const bg=getComputedStyle(document.body).backgroundColor||'#ffffff';
   html2canvas(cap,{scale:2,backgroundColor:bg,useCORS:true,logging:false}).then(canvas=>{
     canvas.toBlob(blob=>{
       const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');
-      a.href=url;
-      a.download='land-calc-'+Date.now()+'.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const a=document.createElement('a');a.href=url;a.download='land-calc-'+Date.now()+'.png';
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
       setTimeout(()=>URL.revokeObjectURL(url),1000);
-      label.textContent='บันทึกแล้ว ✓';
-      foot.style.display='none';
-      btn.style.pointerEvents='';
+      label.textContent='บันทึกแล้ว ✓';foot.style.display='none';btn.style.pointerEvents='';
       setTimeout(()=>{label.textContent='บันทึกเป็นรูป';},2500);
     },'image/png');
-  }).catch(e=>{
-    label.textContent='บันทึกเป็นรูป';
-    foot.style.display='none';
-    btn.style.pointerEvents='';
-    alert('บันทึกไม่สำเร็จ ลองใช้วิธีแคปหน้าจอแทนนะครับ');
+  }).catch(()=>{
+    label.textContent='บันทึกเป็นรูป';foot.style.display='none';btn.style.pointerEvents='';
+    alert('บันทึกไม่สำเร็จ ลองแคปหน้าจอแทนนะครับ');
   });
 }
 </script>
 </body>
 </html>
-
